@@ -15,6 +15,38 @@ extern "C" {
 JNIEXPORT void JNICALL Java_com_ruin_psp_PSP_greetSelf
   (JNIEnv *, jclass);
 
+/*
+ * Class:     com_ruin_psp_PSP
+ * Method:    startEmulator
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_com_ruin_psp_PSP_startEmulator
+  (JNIEnv *, jclass, jstring);
+
+/*
+ * Class:     com_ruin_psp_PSP
+ * Method:    step
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_com_ruin_psp_PSP_step
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     com_ruin_psp_PSP
+ * Method:    nstep
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL Java_com_ruin_psp_PSP_nstep
+  (JNIEnv *, jclass, jint);
+
+/*
+ * Class:     com_ruin_psp_PSP
+ * Method:    shutdown
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_com_ruin_psp_PSP_shutdown
+  (JNIEnv *, jclass);
+
 #ifdef __cplusplus
 }
 #endif

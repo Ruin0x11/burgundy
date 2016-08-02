@@ -5,7 +5,11 @@ public class PSP {
 
     public static native void greetSelf();
 
-    public static void loadPspLibrary() {
-        System.loadLibrary("psp");
-    }
+    public static native void startEmulator(String path);
+
+    public static native void step();
+
+    public static native void nstep(int key);
+
+    public static native void shutdown();
 }
