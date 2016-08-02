@@ -1,0 +1,47 @@
+<project name="psp" default="dist" basedir="."> 
+
+  <property name="build" value="build"/>
+  <property name="src" value="src"/>
+  <property name="dist" value="dist"/>
+  <property name="headers"  value="headers"/>
+  <property name="artifacts" value="../artifacts"/>
+  <property name="lib"  value="lib"/>
+
+  <path id="classpath">
+  </path>
+
+
+  <target name="prepare">
+    <mkdir dir="${build}"/>
+    <mkdir dir="${headers}"/>
+    <mkdir dir="${dist}"/> 
+  </target>
+
+  <target name="compile" depends="prepare" >
+    <javac srcdir="${src}" destdir="${build}"
+	   classpathref="classpath"
+	   includeantruntime="false"/>
+  </target>
+
+  <target name="native" depends="prepare, compile" >
+    <javah class="com.ruin.psp.PSP"
+	   destdir="${headers}"
+	   classpath="${build}"/>
+  </target>
+
+  <target name="dist" depends="native">
+    <jar jarfile="${dist}/psp.jar">
+      <fileset dir="${build}"/>
+      <fileset dir="${src}"/>
+    </jar>
+  </target>
+
+  <target name="all" depends="dist"/>
+
+  <target name="clean" > 
+    <delete dir="${build}"/> 
+    <delete dir="${dist}"/> 
+    <delete dir="${headers}"/>
+  </target> 
+
+</project>
