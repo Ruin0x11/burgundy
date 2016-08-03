@@ -1,6 +1,8 @@
 (ns burgundy.core
+  (:require [clojurewerkz.buffy.core :refer :all])
   (:import com.ruin.psp.PSP)
   (:import java.io.File)
+
   (:gen-class))
 
 (use 'clojure.reflect)
@@ -20,9 +22,6 @@
 (def user-home (File. (System/getProperty "user.home")))
 
 (clojure.lang.RT/loadLibrary "psp")
-;; (PSP/loadPspLibrary)
-
-;; (PSP/greetSelf)
 
 (def phantom-brave-jp
   (File. user-home "game/phantom-brave-jp.iso"))
@@ -42,18 +41,36 @@
   (PSP/startEmulator (.getCanonicalPath phantom-brave-us))
   (PSP/loadSaveState 2))
 
-(defn doIt []
-  (let [arr (byte-array (PSP/readRam 0x01497fc0 2136))
-        thing (apply str (map char (take 16 arr)))]
-    (println thing)))
+(def object-spec (spec :unk-a (bytes-type 728)
+                       :name (string-type 16)))
+
+(def object-start-offset 0x01491070)
+(def object-size 2136)
+
+(def object-stat-offset 793) ;; 5? stats, u32 LE
+(def object-stat-offset-modified 817) ;;accounts for equipment.
+
+(def object-coord-offset 0x74)
+
+(defn print-object [n]
+  (let [arr (PSP/readRam (+ (* n object-size) object-start-offset) object-size)
+        buf (compose-buffer object-spec :orig-buffer arr) ;(compose-buffer object-spec :orig-buffer arr)
+        ]
+    (println (get-field buf :name))))
+
+(defn snoop [addr]
+  (doseq [i addr]
+    (printf "RAM at %x: %08X %d %.6f\n" i (PSP/readRAMU32 i) (PSP/readRAMU16 i) (PSP/readRAMU32Float i)))
+  (println))
+
+(defn snoop-range [start byte-offset count]
+  (snoop (take count (range start (+ (* byte-offset count) start) byte-offset))))
 
 (defn play [n]
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
-
-           (doseq [i addresses]
-             (printf "RAM at %x: %08X %d %.6f\n" i (PSP/readRAMU32 i) (PSP/readRAMU16 i) (PSP/readRAMU32Float i)))
-           (doIt)
+           (print-object 16)
+           (snoop-range 0x01499EBC 8 16)
            (println)
            (PSP/nstep 21))))
 
