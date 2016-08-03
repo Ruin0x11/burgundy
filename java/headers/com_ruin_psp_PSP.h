@@ -79,6 +79,22 @@ JNIEXPORT jint JNICALL Java_com_ruin_psp_PSP_readRAMU16
 JNIEXPORT jlong JNICALL Java_com_ruin_psp_PSP_readRAMU32
   (JNIEnv *, jclass, jint);
 
+/*
+ * Class:     com_ruin_psp_PSP
+ * Method:    readRAMU32Float
+ * Signature: (I)F
+ */
+JNIEXPORT jfloat JNICALL Java_com_ruin_psp_PSP_readRAMU32Float
+  (JNIEnv *, jclass, jint);
+
+/*
+ * Class:     com_ruin_psp_PSP
+ * Method:    readRam
+ * Signature: (II)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_com_ruin_psp_PSP_readRam
+  (JNIEnv *, jclass, jint, jint);
+
 #ifdef __cplusplus
 }
 #endif

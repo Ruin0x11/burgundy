@@ -20,4 +20,8 @@ public class PSP {
     synchronized public static native int readRAMU16(int address);
 
     synchronized public static native long readRAMU32(int address);
+    
+    synchronized public static native float readRAMU32Float(int address);
+
+    synchronized public static native byte[] readRam(int address, int size);
 }

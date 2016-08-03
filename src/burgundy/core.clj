@@ -29,7 +29,7 @@
 (def phantom-brave-us
   (File. user-home "game/phantom-brave-us.iso"))
 
-(def addresses [0x001B20D0 0x001B20D4 0x001B20D8 0x001B20DB])
+(def addresses [0x01454960 0x01454E1C 0x014975A0 0x01497A5C 0x0012E8A4 0x0012E89C 0x0012E8A0])
 
 (defn shutdown! []
   (PSP/shutdown))
@@ -40,14 +40,20 @@
 
 (defn restart! []
   (PSP/startEmulator (.getCanonicalPath phantom-brave-us))
-  (PSP/loadSaveState 0))
+  (PSP/loadSaveState 2))
+
+(defn doIt []
+  (let [arr (byte-array (PSP/readRam 0x01497fc0 2136))
+        thing (apply str (map char (take 16 arr)))]
+    (println thing)))
 
 (defn play [n]
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
 
            (doseq [i addresses]
-             (printf "RAM at %x: %08X\n" i (PSP/readRAMU32 i)))
+             (printf "RAM at %x: %08X %d %.6f\n" i (PSP/readRAMU32 i) (PSP/readRAMU16 i) (PSP/readRAMU32Float i)))
+           (doIt)
            (println)
            (PSP/nstep 21))))
 
@@ -58,4 +64,5 @@
 (defn -main
   [& args]
   (restart!)
-  (continue!))
+  (continue!)
+  (shutdown!))
