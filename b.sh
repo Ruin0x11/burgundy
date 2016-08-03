@@ -7,4 +7,5 @@ popd
 
 pushd ./ppsspp
 ./b.sh --debug
+#./b.sh --release
 popd

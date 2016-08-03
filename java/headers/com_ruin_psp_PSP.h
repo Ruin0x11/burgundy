@@ -47,6 +47,38 @@ JNIEXPORT void JNICALL Java_com_ruin_psp_PSP_nstep
 JNIEXPORT void JNICALL Java_com_ruin_psp_PSP_shutdown
   (JNIEnv *, jclass);
 
+/*
+ * Class:     com_ruin_psp_PSP
+ * Method:    loadSaveState
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL Java_com_ruin_psp_PSP_loadSaveState
+  (JNIEnv *, jclass, jint);
+
+/*
+ * Class:     com_ruin_psp_PSP
+ * Method:    readRAMU8
+ * Signature: (I)I
+ */
+JNIEXPORT jint JNICALL Java_com_ruin_psp_PSP_readRAMU8
+  (JNIEnv *, jclass, jint);
+
+/*
+ * Class:     com_ruin_psp_PSP
+ * Method:    readRAMU16
+ * Signature: (I)I
+ */
+JNIEXPORT jint JNICALL Java_com_ruin_psp_PSP_readRAMU16
+  (JNIEnv *, jclass, jint);
+
+/*
+ * Class:     com_ruin_psp_PSP
+ * Method:    readRAMU32
+ * Signature: (I)J
+ */
+JNIEXPORT jlong JNICALL Java_com_ruin_psp_PSP_readRAMU32
+  (JNIEnv *, jclass, jint);
+
 #ifdef __cplusplus
 }
 #endif
