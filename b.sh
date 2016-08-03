@@ -6,5 +6,5 @@ ant
 popd
 
 pushd ./ppsspp
-./b.sh --system-ffmpeg
+./b.sh --debug
 popd

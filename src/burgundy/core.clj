@@ -31,8 +31,8 @@
   (PSP/shutdown))
 
 (defn restart! []
-  (shutdown!)
-  (PSP/startEmulator phantom-brave-jp))
+  (PSP/startEmulator ""))
+  ;; (PSP/startEmulator (.getCanonicalPath phantom-brave-jp)))
 
 (defn step []
   (PSP/step))
