@@ -33,6 +33,9 @@
     <jar jarfile="${dist}/psp.jar">
       <fileset dir="${build}"/>
       <fileset dir="${src}"/>
+      <manifest>
+        <attribute name="Main-Class" value="com.ruin.psp.SimpleClient"/>
+      </manifest>
     </jar>
   </target>
 

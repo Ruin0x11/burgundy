@@ -1,6 +1,6 @@
 (ns burgundy.core
-  (:require [clojurewerkz.buffy.core :refer :all]
-            [burgundy.interop :refer [units]])
+  (:require ;[vertigo.core :refer [get-in]]
+   [burgundy.interop :refer :all])
   (:import com.ruin.psp.PSP)
   (:import java.io.File)
 
@@ -27,19 +27,11 @@
   (PSP/startEmulator (.getCanonicalPath phantom-brave-us))
   (PSP/loadSaveState 2))
 
-(def object-spec (spec :unk-a (bytes-type 728)
-                       :name (string-type 16)))
-
-(def object-start-offset 0x01491070)
-(def object-size 2136)
-
-(def object-stat-offset 793) ;; 5? stats, u32 LE
-(def object-stat-offset-modified 817) ;;accounts for equipment.
-
-(def object-coord-offset 0x74)
-
 (defn print-object [obj]
-    (println (get-field obj :name)))
+  (println (str
+            ;; (:name obj) "\n"
+            (seq (:name obj))
+            )))
 
 (defn snoop [addr]
   (doseq [i addr]
@@ -52,7 +44,8 @@
 (defn play [n]
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
-           (snoop-range 0x01499EBC 8 16)
+           ;; 0x01499ecc
+           (snoop-range (+ (* 17 object-size) object-start-offset 100) 8 64)
            (println)
            (PSP/nstep 21))))
 
@@ -65,6 +58,5 @@
   (restart!)
   (step)
   (step)
-  (doseq [i (units)]
-    (print-object i))
+  (continue!)
   (shutdown!))
