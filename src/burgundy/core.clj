@@ -1,27 +1,14 @@
 (ns burgundy.core
-  (:require [clojurewerkz.buffy.core :refer :all])
+  (:require [clojurewerkz.buffy.core :refer :all]
+            [burgundy.interop :refer [units]])
   (:import com.ruin.psp.PSP)
   (:import java.io.File)
 
   (:gen-class))
 
-(use 'clojure.reflect)
-
-(defn all-methods [x]
-    (->> x reflect
-           :members
-           (filter :return-type)
-           (map :name)
-           sort
-           (map #(str "." %) )
-           distinct
-           println))
-
-(all-methods PSP)
+(clojure.lang.RT/loadLibrary "psp")
 
 (def user-home (File. (System/getProperty "user.home")))
-
-(clojure.lang.RT/loadLibrary "psp")
 
 (def phantom-brave-jp
   (File. user-home "game/phantom-brave-jp.iso"))
@@ -34,7 +21,6 @@
   (PSP/shutdown))
 
 (defn step []
-  (print "step")
   (PSP/step))
 
 (defn restart! []
@@ -52,11 +38,8 @@
 
 (def object-coord-offset 0x74)
 
-(defn print-object [n]
-  (let [arr (PSP/readRam (+ (* n object-size) object-start-offset) object-size)
-        buf (compose-buffer object-spec :orig-buffer arr) ;(compose-buffer object-spec :orig-buffer arr)
-        ]
-    (println (get-field buf :name))))
+(defn print-object [obj]
+    (println (get-field obj :name)))
 
 (defn snoop [addr]
   (doseq [i addr]
@@ -69,7 +52,6 @@
 (defn play [n]
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
-           (print-object 16)
            (snoop-range 0x01499EBC 8 16)
            (println)
            (PSP/nstep 21))))
@@ -81,5 +63,8 @@
 (defn -main
   [& args]
   (restart!)
-  (continue!)
+  (step)
+  (step)
+  (doseq [i (units)]
+    (print-object i))
   (shutdown!))
