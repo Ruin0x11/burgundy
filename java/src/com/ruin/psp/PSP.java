@@ -51,9 +51,12 @@ public class PSP {
     private final int objectSize = 2136;
     
     public void onUpdate() {
+        units = new ArrayList<Unit>();
         byte[] b = readRam(objectAddress + (17*objectSize), objectSize);
         Unit u = new Unit(b);
-        units = new ArrayList<Unit>();
+        units.add(u);
+        b = readRam(objectAddress + (20*objectSize), objectSize);
+        u = new Unit(b);
         units.add(u);
     }
 }
