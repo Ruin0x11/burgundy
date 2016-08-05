@@ -29,6 +29,9 @@
 ;;   :unk-c (array int8 1380)
 ;;   )
 
+(def team-types
+  {:f })
+
 (defn contiguous-memory
   "Returns count wrapped buffers of size bytes starting at offset."
   [offset size count]

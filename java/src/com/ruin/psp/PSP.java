@@ -46,17 +46,28 @@ public class PSP {
     synchronized public static native byte[] readRam(int address, int size);
 
     private ArrayList<Unit> units = new ArrayList<Unit>();
+    private ArrayList<Unit> playerUnits = new ArrayList<Unit>();
+    private ArrayList<Unit> enemyUnits = new ArrayList<Unit>();
+    private ArrayList<Unit> neutralUnits = new ArrayList<Unit>();
 
-    private final int objectAddress = 0x01491070;
+    private final int objectAddress = 0x01491080;
+    // private final int objectAddress = 0x0144e440;
     private final int objectSize = 2136;
     
     public void onUpdate() {
+        units.clear();
+        playerUnits.clear();
+        enemyUnits.clear();
+        neutralUnits.clear();
         units = new ArrayList<Unit>();
-        byte[] b = readRam(objectAddress + (17*objectSize), objectSize);
-        Unit u = new Unit(b);
-        units.add(u);
-        b = readRam(objectAddress + (20*objectSize), objectSize);
-        u = new Unit(b);
-        units.add(u);
+        for(int i = 0; i < 15; i++) {
+            byte[] b = readRam(objectAddress + (i*objectSize), objectSize);
+
+            // the unit exists if one of the two bytes at 0x854 are not 0
+            if((b[0x854] & 0xFF) != 0x0 || (b[0x855] & 0xFF) != 0x0) {
+                Unit u = new Unit(b);
+                units.add(u);
+            }
+        }
     }
 }
