@@ -2,35 +2,28 @@
   (:import com.ruin.psp.PSP)
   (:import java.io.File))
 
-(def object-start-offset 0x01491070)
-(def object-size 2136)
+(defn island-menu-cursor [] (PSP/getIslandMenuCursorPos))
 
-(def object-stat-offset 793) ;; 5? stats, u32 LE
-(def object-stat-offset-modified 817) ;; accounts for equipment.
+(defn status-menu-cursor [] (PSP/getStatusMenuCursorPos))
 
-(def object-coord-offset 0x84)
+(defn battle-menu-cursor [] (PSP/getBattleMenuCursorPos))
 
-(def object-max 32)
+(defn battle-unit-cursor [] (PSP/getBattleUnitMenuCursorPos))
 
-;; (def object-spec (spec :unk-a (bytes-type 116)
-;;                        :x (int32-type)
-;;                        :y (int32-type)
-;;                        :z (int32-type)
-;;                        :unk-b (bytes-type 600)
-;;                        :name (string-type 16)))
+(defn battle-confine-cursor [] (PSP/getConfineMenuCursorPos))
 
-;; (def-typed-struct unit-struct
-;;   :unk-a (array int8 116)
-;;   :x float32-le
-;;   :y float32-le
-;;   :z float32-le
-;;   :unk-b (array int8 600)
-;;   :name (array int8 16)
-;;   :unk-c (array int8 1380)
-;;   )
+(def scroll-amounts
+  {:attack 8
+   :confine 5
+   :status 7})
 
-(def team-types
-  {:f })
+(defn menu-key-seq
+  "Calculates the optimal input sequence to traverse a menu from position start to position end."
+  ([start end] (- start end))
+  ([start end menu-type]
+   (let [scroll-amt (get scroll-amounts menu-type)
+         diff (Math/abs (- start end))]
+     (+ (/ diff scroll-amt) (mod diff scroll-amt)))))
 
 (defn contiguous-memory
   "Returns count wrapped buffers of size bytes starting at offset."
@@ -41,15 +34,41 @@
          (map byte-array)
          (map bytes))))
 
-;; (defn apply-spec
-;;   "Creates a struct from the wrapped buffer buf using spec."
-;;   [spec buf]
-;;   (compose-buffer spec :orig-buffer buf))
+;; (defn units [] (PSP/getFriendlyUnits)) 
 
-;; (defn units []
-;;   (let [objs (contiguous-memory object-start-offset object-size object-max)]
-;;     (wrap unit-struct objs)))
+(def button-masks
+  {:square    0x8000
+   :triangle  0x1000
+   :circle    0x2000
+   :cross     0x4000
+   :up        0x0010
+   :down      0x0040
+   :left      0x0080
+   :right     0x0020
+   :start     0x0008
+   :select    0x0001
+   :ltrigger  0x0100
+   :rtrigger  0x0200})
 
-(defn units []
-  (let [objs (contiguous-memory object-start-offset object-size object-max)]
-    objs))
+(defn button-bits
+  "Converts a sequence of button keywords into a button bitmask."
+  [buttons]
+  (reduce #(bit-or %1 (%2 button-masks)) 0x0000 buttons))
+
+(defn play-input
+  "Sends input commands.
+  Expects a vector of pairs of a vector of button keywords and the number of frames to hold it for."
+  [input]
+  (doseq [[buttons frames] input]
+      (dotimes [i frames]
+        (let [bitmask (button-bits buttons)]
+          (printf "%x\n" bitmask)
+          (println i)
+          (PSP/nstep bitmask)))))
+
+(defn test-input []
+  (println "asd")
+  (play-input [[[:up]    20]
+               [[:down]  20]
+               [[:left]  20]
+               [[:right] 20]]))

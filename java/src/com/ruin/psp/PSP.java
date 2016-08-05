@@ -30,7 +30,7 @@ public class PSP {
 
     synchronized public static native void step();
 
-    synchronized public static native void nstep(int key);
+    synchronized public static native void nstep(int keys);
 
     synchronized public static native void shutdown();
 
@@ -46,9 +46,43 @@ public class PSP {
 
     synchronized public static native byte[] readRam(int address, int size);
 
+    public static int getTotalUnits() {
+        // return readRAMU8(0x0014AC6B);
+        return 128;
+    }
+
+    public static int getIslandMenuCursorPos() {
+        return readRAMU16(0x0011E644);
+    }
+
+    public static int getBattleMenuCursorPos() {
+        return readRAMU16(0x001BC0AC);
+    }
+
+    public static int getBattleUnitMenuCursorPos() {
+        return readRAMU16(0x001BC0A8);
+    }
+
+    public static int getStatusMenuCursorPos() {
+        int cursorPos = readRAMU16(0x0011E65C);
+        int pageScroll = readRAMU16(0x0011E660);
+        return cursorPos + pageScroll;
+    }
+
+    public static int getConfineMenuCursorPos() {
+        int cursorPos = readRAMU16(0x0011CA28);
+        int pageScroll = readRAMU16(0x0011CA2C);
+        return cursorPos + pageScroll;
+    }
+
+    public List<Unit> getFriendlyUnits() {
+        return Collections.unmodifiableList(friendlyUnits);
+    }
+
     private HashMap<Integer, Unit> units = new HashMap<Integer, Unit>();
     private ArrayList<Unit> friendlyUnits = new ArrayList<Unit>();
     private ArrayList<Unit> enemyUnits = new ArrayList<Unit>();
+    private ArrayList<Unit> neutralUnits = new ArrayList<Unit>();
     private ArrayList<Unit> itemUnits = new ArrayList<Unit>();
 
     private final int objectAddress = 0x01491080;
@@ -59,9 +93,9 @@ public class PSP {
         units.clear();
         friendlyUnits.clear();
         enemyUnits.clear();
+        neutralUnits.clear();
         itemUnits.clear();
-        for(int i = 0; i < 128; i++) {
-        // int i = 12;
+        for(int i = 0; i < getTotalUnits(); i++) {
             byte[] unitRam = readRam(objectAddress + (i*objectSize), objectSize);
 
             // the unit exists if one of the two bytes at 0x854 are not 0
@@ -74,12 +108,21 @@ public class PSP {
                 else if(unit.isFriendly()) {
                     friendlyUnits.add(unit);
                 }
+                else if(unit.isNeutral()) {
+                    neutralUnits.add(unit);
+                }
                 else {
                     enemyUnits.add(unit);
                 }
             }
         }
 
+        listUnits();
+
+        System.out.println();
+    }
+
+    private void listUnits() {
         System.out.println("=== Friendly Units ===");
         for(Unit cur : friendlyUnits) {
             System.out.println(cur.getName());
@@ -90,10 +133,16 @@ public class PSP {
             System.out.println(cur.getName());
         }
         System.out.println();
+        System.out.println("=== Neutral Units ===");
+        for(Unit cur : neutralUnits) {
+            System.out.println(cur.getName());
+        }
+        System.out.println();
         System.out.println("=== Item Units ===");
         for(Unit cur : itemUnits) {
             System.out.println(cur.getName());
         }
         System.out.println();
+
     }
 }

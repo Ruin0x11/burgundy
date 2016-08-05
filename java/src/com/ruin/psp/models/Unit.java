@@ -10,7 +10,6 @@ public class Unit {
     public static final int TEAM_FRIENDLY = 0;
     public static final int TEAM_ENEMY = 1;
     public static final int TEAM_NEUTRAL = 2;
-    public static final int TEAM_MARONA = 6;
 
     private short id;
 
@@ -32,10 +31,8 @@ public class Unit {
     private int statRes;
     private int statSpd;
 
-    private int team;
-
     private boolean isItem;
-    private short allyId;
+    private int team;
 
     // if a unit is confined (friendly), this points to the memory location of that unit's stats
     private int friendlyUnitOffset;
@@ -50,15 +47,27 @@ public class Unit {
 
         this.currentHP = bb.getInt(0x5BC);
 
-        this.team = bb.getInt(0x3C);
-        System.out.println(String.format("%8s", Integer.toBinaryString(bb.getInt(0x82a) & 0xFF)).replace(' ', '0'));
-        // 0x82a : bitfield
+        short teamFlagA = bb.getShort(0x152);
+        short teamFlagB = bb.getShort(0x154);
+        short teamFlagC = bb.getShort(0x156);
+        System.out.println(teamFlagA + " " + teamFlagB + " " + teamFlagC);
+
+        if(teamFlagA == 2) {
+            this.team = TEAM_NEUTRAL;
+        } else if(teamFlagA == 1 && teamFlagB == 1 && teamFlagC == 1) {
+            this.team = TEAM_ENEMY;
+        } else {
+            this.team = TEAM_FRIENDLY;
+        }
+
+        // 0x82a : bitfield?
         this.unitType = bb.getShort(0x30);
         this.lv = bb.getShort(0x510);
 
         this.isItem = bb.getShort(0x15a) == 1;
+        // this.isMarona = bb.getShort(0x15a) == 1;
+        System.out.println(bb.getShort(0x152));
         // this.isPerson = bb.getShort(0x166) == 1;
-        this.allyId = bb.getShort(0x854);
 
         byte[] nameData = new byte[16];
         if(this.isFriendly()) {
@@ -98,6 +107,9 @@ public class Unit {
             e.printStackTrace();
         }
         this.name = this.name.trim();
+        if(this.name.isEmpty()) {
+            this.name = "other";
+        }
 
         this.statHP = bb.getInt(0xFC);
         this.statAtk = bb.getInt(0x5A4);
@@ -108,7 +120,7 @@ public class Unit {
 
         this.id = bb.getShort(0x852);
 
-        System.out.println(this.toString());
+        // System.out.println(this.toString());
 
         try {
             FileOutputStream fos = new FileOutputStream("/home/prin/dump/" + this.name + ".dump");
@@ -176,11 +188,15 @@ public class Unit {
     }
 
     public boolean isFriendly() {
-        return !isItem && allyId != -1;
+        return this.team == TEAM_FRIENDLY;
     }
 
     public boolean isEnemy() {
-        return !isFriendly();
+        return this.team == TEAM_ENEMY;
+    }
+
+    public boolean isNeutral() {
+        return this.team == TEAM_NEUTRAL;
     }
 
     public String toString() {

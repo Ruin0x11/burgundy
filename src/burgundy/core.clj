@@ -45,9 +45,8 @@
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
            ;; 0x01499ecc
-           (snoop-range (+ (* 17 object-size) object-start-offset 100) 8 64)
-           (println)
-           (PSP/nstep 21))))
+           (test-input)
+           )))
 
 (defn continue! []
   (println "continue")

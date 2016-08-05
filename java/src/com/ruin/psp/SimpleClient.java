@@ -10,7 +10,7 @@ public class SimpleClient implements PSPListener {
         psp.step();
         psp.step();
         while(true) {
-            psp.step();
+            psp.nstep(0x0040);
             psp.onUpdate();
         }
     }
