@@ -81,6 +81,10 @@ public class PSP {
         return readRAMU16(0x001BC0A8);
     }
 
+    public static int getBattleAttackMenuCursorPos() {
+        return readRAMU16(0x0014AC94);
+    }
+
     public static int getStatusMenuCursorPos() {
         int cursorPos = readRAMU16(0x0011E65C);
         int pageScroll = readRAMU16(0x0011E660);
@@ -97,11 +101,20 @@ public class PSP {
         return Collections.unmodifiableList(friendlyUnits);
     }
 
+    public List<Unit> getEnemyUnits() {
+        return Collections.unmodifiableList(enemyUnits);
+    }
+
+    public List<Unit> getItemUnits() {
+        return Collections.unmodifiableList(itemUnits);
+    }
+
     private HashMap<Integer, Unit> units = new HashMap<Integer, Unit>();
     private ArrayList<Unit> friendlyUnits = new ArrayList<Unit>();
     private ArrayList<Unit> enemyUnits = new ArrayList<Unit>();
     private ArrayList<Unit> neutralUnits = new ArrayList<Unit>();
     private ArrayList<Unit> itemUnits = new ArrayList<Unit>();
+    private ArrayList<Unit> deadUnits = new ArrayList<Unit>();
 
     private final int objectAddress = 0x01491080;
     // private final int objectAddress = 0x0144e440;
@@ -113,6 +126,7 @@ public class PSP {
         enemyUnits.clear();
         neutralUnits.clear();
         itemUnits.clear();
+        deadUnits.clear();
         for(int i = 0; i < getTotalUnits(); i++) {
             byte[] unitRam = readRam(objectAddress + (i*objectSize), objectSize);
 
@@ -120,7 +134,10 @@ public class PSP {
             if((unitRam[0x854] & 0xFF) != 0x0 || (unitRam[0x855] & 0xFF) != 0x0) {
                 Unit unit = new Unit(unitRam);
                 units.put(unit.getId(), unit);
-                if(unit.isItem()) {
+                if(unit.getCurrentHp() == 0) {
+                    deadUnits.add(unit);
+                }
+                else if(unit.isItem()) {
                     itemUnits.add(unit);
                 }
                 else if(unit.isFriendly()) {
@@ -134,7 +151,6 @@ public class PSP {
                 }
             }
         }
-        System.out.println("pos: " + getConfineMenuCursorPos());
     }
 
     public void listUnits() {

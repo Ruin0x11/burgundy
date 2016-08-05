@@ -150,11 +150,11 @@ public class Unit {
         return z;
     }
 
-    public int getCurrentHP() {
+    public int getCurrentHp() {
         return currentHP;
     }
 
-    public int getMaxHP() {
+    public int getMaxHp() {
         return statHP;
     }
 

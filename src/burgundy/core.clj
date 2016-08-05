@@ -32,18 +32,36 @@
 (defn play [n]
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
-           ;; (step 0)
-           (println (dist (first (my-units))))
-           (cond
-             (> (dist (first (my-units))) 0.7)
-             (do (println "go")
-               (get-closer))
-             :else
-             (do
-               (move-unit 0 0)
-               (end-action))
-             )
-           (println (PSP/getBattleUnitMenuCursorPos))
+           ;; (println (unit-name (closest (first (my-units)) (enemy-units))))
+           ;; (println (get-pos (first (my-units))))
+           ;; (println (pos-z (first (my-units))))
+           ;; (println (dist (first (my-units))))
+           ;; (println (get-player-pos))
+           ;; (get-closer (first (my-units)))
+
+           (cancel)
+           (let [main (first (my-units))
+                 target (closest main (enemy-units))]
+             (cond
+               (in-range? main target 25)
+               (do
+                 (println (dist main target))
+                 (println (get-pos main))
+                 (println (get-pos target))
+                 (attack target))
+               :else
+               (do
+                 (println (dist main target))
+                 (println (get-pos main))
+                 (println (get-pos target))
+                 (move-unit-quick (closest (first (my-units)) (enemy-units)))
+                 (when (in-range? (first (my-units)) target 25)
+                   (attack target)))))
+           (end-action)
+
+           (step)
+
+           (println (PSP/getBattleAttackMenuCursorPos))
            )))
 
 (defn continue! []

@@ -15,7 +15,10 @@
 
 (defn step
   ([ax ay]
-   (PSP/nstep 0x0000 ax ay))
+   (PSP/nstep 0x0000 ax ay)
+   (.onUpdate api)
+   (execute-repl-queue)
+   )
   ([bitmask]
    ;; TODO: use callbacks instead
    (PSP/nstep bitmask 0.0 0.0)
@@ -23,7 +26,9 @@
    (execute-repl-queue))
   ([]
    (PSP/step)
-   (.onUpdate api)))
+   (.onUpdate api)
+   (execute-repl-queue)
+   ))
 
 (def user-home (File. (System/getProperty "user.home")))
 
@@ -47,6 +52,8 @@
 
 (defn my-units [] (.getFriendlyUnits api))
 
+(defn enemy-units [] (.getEnemyUnits api))
+
 (defn island-menu-cursor [] (PSP/getIslandMenuCursorPos))
 
 (defn status-menu-cursor [] (PSP/getStatusMenuCursorPos))
@@ -54,6 +61,8 @@
 (defn battle-menu-cursor [] (PSP/getBattleMenuCursorPos))
 
 (defn battle-unit-cursor [] (PSP/getBattleUnitMenuCursorPos))
+
+(defn battle-attack-cursor [] (PSP/getBattleAttackMenuCursorPos))
 
 (defn battle-confine-cursor [] (PSP/getConfineMenuCursorPos))
 
@@ -109,10 +118,9 @@
       (= (first buttons) :analog)
       (dotimes [i frames]
         (step (nth buttons 1) (nth buttons 2)))
-      
+
       :else (dotimes [i frames]
               (let [bitmask (button-bits buttons)]
-                (println bitmask)
                 (step bitmask))))))
 
 (defn test-input []
@@ -138,6 +146,9 @@
 (defn pos-z [unit]
   (.getZ unit))
 
+(defn unit-name [unit]
+  (.getName unit))
+
 (defn get-player-pos []
   (let [x (PSP/getPlayerX)
         y (PSP/getPlayerY)
@@ -151,14 +162,12 @@
     [x y z]))
 
 (defn dist
-  ([a b]
-   (Math/sqrt (+ (Math/pow (- (pos-x a) (pos-x b)) 2)
-                 ;; (Math/pow (- (pos-y a) (pos-y b)) 2)
-                 (Math/pow (- (pos-z a) (pos-z b)) 2))))
-  ([unit]
-   (Math/sqrt (+ (Math/pow (- (pos-x unit) (PSP/getPlayerX)) 2)
-                 ;; (Math/pow (- (pos-y unit) (PSP/getPlayerY)) 2)
-                 (Math/pow (- (pos-z unit) (PSP/getPlayerZ)) 2)))))
+  ([a b]          (dist (pos-x a) (pos-z a)
+                        (pos-x b) (pos-z b)))
+  ([unit]         (dist (pos-x unit) (pos-z unit)
+                        (PSP/getPlayerX) (PSP/getPlayerZ)))
+  ([x1 z1 x2 z2] (Math/sqrt (+ (Math/pow (- x1 x2) 2)
+                               (Math/pow (- z1 z2) 2)))))
 
 (defn deg->rad [deg] (* deg (/ Math/PI 180)))
 (defn rad->deg [rad] (mod (* rad (/ 180 Math/PI)) 360))
@@ -204,12 +213,29 @@
         radb (deg->rad (+ angle 90))
         x (Math/cos radb)
         y (Math/sin rad)]
-  (+ x y)))
+    (+ x y)))
 
-(defn get-closer []
-  (let [unit (first (my-units))
-        angle (mod (+ (angle-to unit) 225) 360)
-        [ax ay] (angle->analog angle 1.0)]
-    (play-input [[[:analog ax ay] 1]])
-    ;; (step)
-    ))
+(defn closest [unit coll]
+  (when (and unit (seq coll))
+    (apply min-key (partial dist unit) coll)))
+
+(defn in-range? [unit target dis]
+  (< (dist unit target) dis)
+  )
+
+(defn dead? [unit]
+  (= 0 (.getCurrentHp unit)))
+
+(defn get-closer
+  ([unit] (get-closer unit 0.8))
+  ([unit within]
+   ;; TODO: adjust based on camera angle
+   ;; TODO: calculate exact number of frames
+   (while (> (dist unit) within)
+     (println (dist unit))
+     (let [angle (mod (+ (angle-to unit) 225) 360)
+           scale (if (> (dist unit) (+ 5.0 within)) 1.0 0.6)
+           [ax ay] (angle->analog angle scale)]
+       (play-input [[[:analog ax ay] 1]])
+       ;; (step)
+       ))))
