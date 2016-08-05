@@ -1,9 +1,10 @@
 package com.ruin.psp;
 
 import com.ruin.psp.models.*;
+import java.util.Collections;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
-
 
 public class PSP {
 
@@ -20,6 +21,8 @@ public class PSP {
 
     private PSPListener listener;
 
+    public PSP() {}
+
     public PSP(PSPListener listener){
         this.listener = listener;
     }
@@ -30,11 +33,14 @@ public class PSP {
 
     synchronized public static native void step();
 
-    synchronized public static native void nstep(int keys);
+    synchronized public static native void nstep(int keys, float analogX, float analogY);
 
     synchronized public static native void shutdown();
 
-    synchronized public static native void loadSaveState(int slot);
+    // synchronized public static native void loadSaveState(int slot);
+    synchronized public static native void loadSaveState(String filename);
+
+    synchronized public static native void setFramelimit(boolean framelimit);
 
     synchronized public static native int readRAMU8(int address);
 
@@ -45,6 +51,18 @@ public class PSP {
     synchronized public static native float readRAMU32Float(int address);
 
     synchronized public static native byte[] readRam(int address, int size);
+
+    public static float getPlayerX() {
+        return readRAMU32Float(0x0012E89C);
+    }
+
+    public static float getPlayerY() {
+        return readRAMU32Float(0x0012E8A0);
+    }
+
+    public static float getPlayerZ() {
+        return readRAMU32Float(0x0012E8A4);
+    }
 
     public static int getTotalUnits() {
         // return readRAMU8(0x0014AC6B);
@@ -116,13 +134,10 @@ public class PSP {
                 }
             }
         }
-
-        listUnits();
-
-        System.out.println();
+        System.out.println("pos: " + getConfineMenuCursorPos());
     }
 
-    private void listUnits() {
+    public void listUnits() {
         System.out.println("=== Friendly Units ===");
         for(Unit cur : friendlyUnits) {
             System.out.println(cur.getName());
@@ -143,6 +158,5 @@ public class PSP {
             System.out.println(cur.getName());
         }
         System.out.println();
-
     }
 }

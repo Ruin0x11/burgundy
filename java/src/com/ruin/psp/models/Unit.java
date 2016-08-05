@@ -50,7 +50,6 @@ public class Unit {
         short teamFlagA = bb.getShort(0x152);
         short teamFlagB = bb.getShort(0x154);
         short teamFlagC = bb.getShort(0x156);
-        System.out.println(teamFlagA + " " + teamFlagB + " " + teamFlagC);
 
         if(teamFlagA == 2) {
             this.team = TEAM_NEUTRAL;
@@ -66,32 +65,30 @@ public class Unit {
 
         this.isItem = bb.getShort(0x15a) == 1;
         // this.isMarona = bb.getShort(0x15a) == 1;
-        System.out.println(bb.getShort(0x152));
         // this.isPerson = bb.getShort(0x166) == 1;
 
         byte[] nameData = new byte[16];
         if(this.isFriendly()) {
             this.friendlyUnitOffset = bb.getInt(0x584) - 0x8800000;
+            this.name = "friendly";
             // 0x58c : pointer to second unit info
             // 0x584 : pointer to held item's info
             // 0x594 : pointer to a skill
             // 0x10 : pointer to something
             // 0x1d8 : pointer to something
-            System.out.println(friendlyUnitOffset);
 
             if(this.friendlyUnitOffset != 0) {
-                nameData = PSP.readRam(this.friendlyUnitOffset + 16, 24);
-                System.out.println(Arrays.toString(nameData));
+                // nameData = PSP.readRam(this.friendlyUnitOffset + 16, 24);
 
                 // split the 0-terminated string
-                int stringEnd = 0;
-                for(int i = 0; i < nameData.length; i++) {
-                    if((nameData[i] & 0xFF) == 0) {
-                        stringEnd = i;
-                        break;
-                    }
-                }
-                nameData = Arrays.copyOfRange(nameData, 0, stringEnd);
+                // int stringEnd = 0;
+                // for(int i = 0; i < nameData.length; i++) {
+                //     if((nameData[i] & 0xFF) == 0) {
+                //         stringEnd = i;
+                //         break;
+                //     }
+                // }
+                // nameData = Arrays.copyOfRange(nameData, 0, stringEnd);
             }
         }
         else {
@@ -119,8 +116,6 @@ public class Unit {
         this.statSpd = bb.getInt(0x5A4 + 16);
 
         this.id = bb.getShort(0x852);
-
-        // System.out.println(this.toString());
 
         try {
             FileOutputStream fos = new FileOutputStream("/home/prin/dump/" + this.name + ".dump");

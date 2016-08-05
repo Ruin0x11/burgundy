@@ -34,10 +34,10 @@ JNIEXPORT void JNICALL Java_com_ruin_psp_PSP_step
 /*
  * Class:     com_ruin_psp_PSP
  * Method:    nstep
- * Signature: (I)V
+ * Signature: (IFF)V
  */
 JNIEXPORT void JNICALL Java_com_ruin_psp_PSP_nstep
-  (JNIEnv *, jclass, jint);
+  (JNIEnv *, jclass, jint, jfloat, jfloat);
 
 /*
  * Class:     com_ruin_psp_PSP
@@ -50,10 +50,18 @@ JNIEXPORT void JNICALL Java_com_ruin_psp_PSP_shutdown
 /*
  * Class:     com_ruin_psp_PSP
  * Method:    loadSaveState
- * Signature: (I)V
+ * Signature: (Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_com_ruin_psp_PSP_loadSaveState
-  (JNIEnv *, jclass, jint);
+  (JNIEnv *, jclass, jstring);
+
+/*
+ * Class:     com_ruin_psp_PSP
+ * Method:    setFramelimit
+ * Signature: (Z)V
+ */
+JNIEXPORT void JNICALL Java_com_ruin_psp_PSP_setFramelimit
+  (JNIEnv *, jclass, jboolean);
 
 /*
  * Class:     com_ruin_psp_PSP

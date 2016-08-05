@@ -1,31 +1,13 @@
 (ns burgundy.core
-  (:require ;[vertigo.core :refer [get-in]]
-   [burgundy.interop :refer :all])
+  (:require [burgundy.interop :refer :all]
+            [burgundy.menu :refer :all]
+            [burgundy.repl :refer :all])
   (:import com.ruin.psp.PSP)
-  (:import java.io.File)
+  (:import java.io.File))
 
-  (:gen-class))
+(def run-repl? true)
 
-(clojure.lang.RT/loadLibrary "psp")
-
-(def user-home (File. (System/getProperty "user.home")))
-
-(def phantom-brave-jp
-  (File. user-home "game/phantom-brave-jp.iso"))
-(def phantom-brave-us
-  (File. user-home "game/phantom-brave-us.iso"))
-
-(def addresses [0x01454960 0x01454E1C 0x014975A0 0x01497A5C 0x0012E8A4 0x0012E89C 0x0012E8A0])
-
-(defn shutdown! []
-  (PSP/shutdown))
-
-(defn step []
-  (PSP/step))
-
-(defn restart! []
-  (PSP/startEmulator (.getCanonicalPath phantom-brave-us))
-  (PSP/loadSaveState 2))
+;; (def addresses [0x01454960 0x01454E1C 0x014975A0 0x01497A5C 0x0012E8A4 0x0012E89C 0x0012E8A0])
 
 (defn print-object [obj]
   (println (str
@@ -41,11 +23,21 @@
 (defn snoop-range [start byte-offset count]
   (snoop (take count (range start (+ (* byte-offset count) start) byte-offset))))
 
+(defn confine-state []
+  (load-state "confine"))
+
+(defn restart! []
+  (PSP/startEmulator (.getCanonicalPath phantom-brave-us)))
+
 (defn play [n]
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
-           ;; 0x01499ecc
-           (test-input)
+           ;; (step 0)
+           (get-closer)
+           (println (get-pos (first (my-units))))
+           (println (get-player-pos))
+           (println (dist (first (my-units))))
+           (println (PSP/getConfineMenuCursorPos))
            )))
 
 (defn continue! []
@@ -54,8 +46,18 @@
 
 (defn -main
   [& args]
-  (restart!)
-  (step)
-  (step)
-  (continue!)
-  (shutdown!))
+  (let [api (com.ruin.psp.PSP.)]
+    (bind-api! api)
+
+    (when run-repl?
+      (repl-control! true)
+      (start-repl! 7777))
+
+    (restart!)
+    (PSP/setFramelimit false)
+    (load-state "move")
+    (step)
+    (step)
+    ;; (confine-unit 6)
+    (continue!)
+    (shutdown!)))
