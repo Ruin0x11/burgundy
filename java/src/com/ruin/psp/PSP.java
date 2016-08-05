@@ -5,6 +5,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.nio.*;
+import java.io.*;
+import java.util.Arrays;
 
 public class PSP {
 
@@ -53,6 +56,14 @@ public class PSP {
     synchronized public static native byte[] readRam(int address, int size);
 
     /**
+     * Indicates whether or not a non-friendly unit is acting.
+     * Always 0x0f during the non-friendly unit's turn.
+     */
+    private static int transitionFromEnemyFrames() {
+        return readRAMU16(0x001BC0C8);
+    }
+
+    /**
      * Returns the number of frames left during the transition from one unit's turn to the next.
      * If 0, there is no transition.
      */
@@ -65,14 +76,18 @@ public class PSP {
      * If 0, there are no menus open, but the player still might not be in control.
      */
     private static int getMenuLayer() {
-        return readRAMU16(0x001BC00C);
+        return readRAMU8(0x001BC054);
     }
 
     /**
      * Returns true if the cursor can be moved on the map.
      */
     public static boolean canMoveInMap() {
-        return (getMenuLayer() == 0) && (transitionFrames() == 0);
+        return (getMenuLayer() == 0) && ((transitionFrames() == 0) || transitionFrames() > 0x40) && (transitionFromEnemyFrames() != 0x0f);
+    }
+
+    public static void printFlags() {
+        System.out.println(getMenuLayer() + " " + transitionFrames() + " " + transitionFromEnemyFrames());
     }
 
     /**
@@ -164,6 +179,28 @@ public class PSP {
     private final int objectAddress = 0x01491080;
     // private final int objectAddress = 0x0144e440;
     private final int objectSize = 2136;
+
+    public static String getStringAt(ByteBuffer bb, int offset, int size) {
+        byte[] data = PSP.readRam(offset, size);
+        // split the 0-terminated string
+        int stringEnd = 0;
+        for(int i = 0; i < data.length; i++) {
+            if((data[i] & 0xFF) == 0) {
+                stringEnd = i;
+                break;
+            }
+        }
+        data = Arrays.copyOfRange(data, 0, stringEnd);
+
+        String str = "";
+        try {
+            str = new String(data, "ASCII");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return str;
+    }
+
 
     public void onUpdate() {
         units.clear();

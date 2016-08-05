@@ -1,14 +1,14 @@
 (ns burgundy.core
   (:require [burgundy.interop :refer :all]
             [burgundy.menu :refer :all]
+            [burgundy.battle :refer :all]
             [burgundy.repl :refer :all])
   (:import com.ruin.psp.PSP)
   (:import java.io.File))
 
-(def run-ai? false)
-(def run-repl? true)
-
 ;; (def addresses [0x01454960 0x01454E1C 0x014975A0 0x01497A5C 0x0012E8A4 0x0012E89C 0x0012E8A0])
+
+(def run-ai? true)
 
 (defn print-object [obj]
   (println (str
@@ -33,49 +33,11 @@
 (defn play [n]
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
-           ;; (println (get-name (closest (first (my-units)) (enemy-units))))
-           ;; (println (get-pos (first (my-units))))
-           ;; (println (pos-z (first (my-units))))
-           ;; (println (dist (first (my-units))))
-           ;; (println (get-player-pos))
-           ;; (move-to (first (my-units)))
-
-           (snoop-range 0x000f4d6e 8 64)
-
-
-           ;; (list-units)
-
+           (list-units)
            (when run-ai?
-             (let [the-unit (first (my-units))
-                   target (closest the-unit (enemy-units))]
-               (when-not (or (nil? target) (nil? the-unit))
-                 (when (> (dist the-unit) 4.0)
-                   (cancel))
-                 (cond
-                   (too-close? the-unit target)
-                   (move-unit target 20.0 :away)
-
-                   (in-range? the-unit target 50)
-                   (do
-                     (println (dist the-unit target))
-                     (println (get-pos the-unit))
-                     (println (get-pos target))
-                     (attack target))
-                   :else
-                   (do
-                     (println (dist the-unit target))
-                     (println (get-pos the-unit))
-                     (println (get-pos target))
-                     (move-unit (closest (first (my-units)) (enemy-units)) 10.0)
-                     (when (in-range? (first (my-units)) target 50)
-                       (attack target))))
-                 (end-action))))
-
-           
+             (run-battle-engine))
            (step)
-
-           (println (PSP/getBattleAttackMenuCursorPos))
-           )))
+           (println (PSP/getBattleAttackMenuCursorPos)))))
 
 (defn continue! []
   (println "continue")
@@ -92,7 +54,7 @@
 
     (restart!)
     (PSP/setFramelimit false)
-    (load-state "many")
+    (load-state "lzarl")
     (step)
     (step)
     ;; (confine-unit 6)

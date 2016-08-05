@@ -39,7 +39,7 @@ public class Unit {
     // if a unit is confined (friendly), this points to the memory location of that unit's stats
     private int friendlyUnitOffset;
 
-    public Unit(byte[] data) {
+        public Unit(byte[] data) {
         ByteBuffer bb = ByteBuffer.wrap(data);
         bb.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -55,7 +55,7 @@ public class Unit {
 
         if(teamFlagA == 2) {
             this.team = TEAM_NEUTRAL;
-        } else if(teamFlagA == 1 && teamFlagB == 1 && teamFlagC == 1) {
+        } else if(teamFlagA == 1) {
             this.team = TEAM_ENEMY;
         } else {
             this.team = TEAM_FRIENDLY;
@@ -66,47 +66,43 @@ public class Unit {
 
         this.isItem = bb.getShort(0x15a) == 1;
 
-        byte[] nameData = new byte[16];
         if(this.isFriendly()) {
             this.friendlyUnitOffset = bb.getInt(0x584) - 0x8800000;
             this.name = "friendly";
-            // 0x58c : pointer to second unit info
-            // 0x584 : pointer to held item's info
+            // 0x58c : pointer to held item's info
             // 0x594 : pointer to a skill
             // 0x10 : pointer to something
             // 0x1d8 : pointer to something
 
+            // if(bb.getInt(0x594) > 0) {
+            //     System.out.println(getStringAt(bb, bb.getInt(0x594) - 0x8800000 + 12, 31));
+            // }
+
             if(this.friendlyUnitOffset != 0) {
                 this.mana = PSP.readRAMU32(this.friendlyUnitOffset + 148);
 
-                nameData = PSP.readRam(this.friendlyUnitOffset + 16, 24);
-
-                // split the 0-terminated string
-                int stringEnd = 0;
-                for(int i = 0; i < nameData.length; i++) {
-                    if((nameData[i] & 0xFF) == 0) {
-                        stringEnd = i;
-                        break;
-                    }
-                }
-                nameData = Arrays.copyOfRange(nameData, 0, stringEnd);
+                this.name = PSP.getStringAt(bb, this.friendlyUnitOffset + 16, 24);
             }
         }
         else {
             // get 16 bytes at 0x2C8
+            byte[] nameData = new byte[16];
             bb.position(0x2C8);
             bb.get(nameData);
+
+            try {
+                this.name = new String(nameData, "ASCII");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
-        try {
-            this.name = new String(nameData, "ASCII");
-        } catch (Exception e) {
-            this.name = "u";
-            e.printStackTrace();
-        }
-        this.name = this.name.trim();
-        if(this.name.isEmpty()) {
-            this.name = "other";
+        if(this.isItem()) {
+            // 0x56c : item details pointer - 704 bytes
+
+            // inside:
+            // 0xfa : 32 slots for 8-byte skills - 256 bytes
+            // u2 level, u4 exp, u2 identifier
         }
 
         this.statHP = bb.getInt(0xFC);
@@ -118,13 +114,13 @@ public class Unit {
 
         this.id = bb.getShort(0x852);
 
-        try {
-            FileOutputStream fos = new FileOutputStream("/home/prin/dump/" + this.name + ".dump");
-            fos.write(data);
-            fos.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        // try {
+        //     FileOutputStream fos = new FileOutputStream("/home/prin/dump/" + this.name + ".dump");
+        //     fos.write(data);
+        //     fos.close();
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        // }
     }
 
     public void update(byte[] data) {

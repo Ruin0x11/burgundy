@@ -9,7 +9,7 @@
 
 (def menu-sizes
   {:attack 999
-   :battle-unit 6
+   :battle-unit 5 ;; plus one if marona
    :battle-main 4
    :confine 999
    :status 999})
@@ -37,6 +37,14 @@
                                     (repeat arrows [[[:up] 1] (wait menu-delay)])))))))
 
 
+(defn wait-until-active
+  "Bad. Use state instead."
+  []
+  (while (not (is-active?))
+    (println "--Waiting.--")
+    (print-flags)
+    (step)))
+
 (defn cancel []
   (println "cancel")
   (play-input
@@ -49,8 +57,10 @@
   [unit]
   (if (> (dist unit) 1.0)
     (if (can-move?)
-      (play-input
-       (press :cross))
+      (do
+       (play-input
+        (press :cross))
+       (wait-until-active))
       (let [angle (mod (+ (angle-to unit) 225) 360)
             [ax ay] (angle->analog angle 1.0)]
         (println [ax ay])
@@ -67,7 +77,6 @@
         [ax ay] (angle->analog angle 1.0)]
     (play-input
      (concat
-      [(wait 10)]
       (press :cross)
       (menu-key-seq (battle-unit-cursor) 0)
       (press :cross)))
@@ -75,9 +84,10 @@
     (move-to target 10.0 dir)
 
     (if (can-move?)
-      (play-input
-       (concat
-        (press :cross 20)))
+      (do
+        (play-input
+         (press :cross 20))
+        (wait-until-active))
       ;; TODO: fix.
       (look-for-walkable (first (my-units))))
     (println "Moving ended.")))
@@ -89,14 +99,15 @@
 
   (play-input
    (concat
-    [(wait 40)]
+    [(wait 20)]
     (press :cross 20)
     (menu-key-seq (battle-unit-cursor) 0)))
 
   (if (can-move?)
-    (play-input
-     (concat
-      (press :cross 20)))
+    (do
+      (play-input
+       (press :cross 20))
+      (wait-until-active))
     (look-for-walkable (first (my-units))))
   (println "Moving ended.")
   )
@@ -118,8 +129,10 @@
     (press :cross)))
 
   (if (can-attack?)
-    (play-input
-     (press :cross 80))
+    (do
+      (play-input
+       (press :cross))
+      (wait-until-active))
     (do
       (cancel)
       (cancel)
@@ -131,7 +144,7 @@
   (println "Ending action.")
   (play-input
    (concat
-    [(wait 80)]
+    [(wait 4)]
     (press :cross)
     (menu-key-seq (battle-unit-cursor) 5)
     (press :cross)))

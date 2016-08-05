@@ -1,5 +1,6 @@
 (ns burgundy.interop
-  (:require [burgundy.repl :refer :all])
+  (:require [burgundy.repl :refer :all]
+            [burgundy.queue :refer :all])
   (:import com.ruin.psp.PSP)
   (:import java.io.File))
 
@@ -8,27 +9,29 @@
 (def api nil)
 (defn bind-api! [binding] (alter-var-root #'api #(identity %2) binding))
 
+(def run-repl? true)
+
 ;; emulator-specific
 
 (defn shutdown! []
   (PSP/shutdown))
 
+(defn do-update []
+  (.onUpdate api)
+  (when run-repl?
+    (execute-repl-queue)))
+
 (defn step
   ([ax ay]
    (PSP/nstep 0x0000 ax ay)
-   (.onUpdate api)
-   (execute-repl-queue)
-   )
+   (do-update))
   ([bitmask]
    ;; TODO: use callbacks instead
    (PSP/nstep bitmask 0.0 0.0)
-   (.onUpdate api)
-   (execute-repl-queue))
+   (do-update))
   ([]
    (PSP/step)
-   (.onUpdate api)
-   (execute-repl-queue)
-   ))
+   (do-update)))
 
 (def user-home (File. (System/getProperty "user.home")))
 
@@ -74,8 +77,6 @@
     (->> objs
          (map byte-array)
          (map bytes))))
-
-;; (defn units [] (PSP/getFriendlyUnits))
 
 (def button-masks
   {:square    0x8000
@@ -148,6 +149,9 @@
 
 (defn list-units []
   (.listUnits api))
+
+(defn print-flags []
+  (PSP/printFlags))
 
 (defn pos-x [unit]
   (.getX unit))
@@ -241,6 +245,12 @@
 (defn too-close? [unit target]
   (< (dist unit target) 6.0))
 
+(defn is-active?
+  "Returns true if the cursor can be moved on the map.
+
+  This means it is the player's turn and there are no animations/menus."
+  [] (PSP/canMoveInMap))
+
 (defn can-move?
   "Checks if the unit that is trying to move can move to the position
    the cursor is at.
@@ -259,18 +269,18 @@
   (= 0 (.getCurrentHp unit)))
 
 (defn move-to
-  ([unit] (move-to unit 5.0))
+  ([unit] (move-to unit 3.0))
   ([unit within & [dir]]
    ;; TODO: adjust based on camera angle
    ;; TODO: calculate exact number of frames
    (let [comparator (if (= dir :away) < >)
          angle-fn (if (= dir :away) angle-away angle-to)]
      (while (comparator (dist unit) within)
-       (println (dist unit))
+       ;; (println (dist unit))
        (let [angle (mod (+ (angle-fn unit) 225) 360)
              scale (if (comparator (dist unit) (+ 5.0 within)) 1.0 0.75)
              [ax ay] (angle->analog angle scale)]
-         (println [ax ay])
+         ;; (println [ax ay])
          (play-input [[[:analog ax ay] 1]])
          ;; (step)
          )))))
