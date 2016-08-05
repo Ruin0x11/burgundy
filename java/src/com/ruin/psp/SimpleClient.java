@@ -6,7 +6,7 @@ public class SimpleClient implements PSPListener {
     public SimpleClient() {
         psp = new PSP(this);
         psp.startEmulator("/home/prin/game/phantom-brave-us.iso");
-        psp.loadSaveState(2);
+        psp.loadSaveState(3);
         psp.step();
         psp.step();
         while(true) {

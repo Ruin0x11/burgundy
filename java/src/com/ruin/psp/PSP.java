@@ -2,6 +2,7 @@ package com.ruin.psp;
 
 import com.ruin.psp.models.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 
 public class PSP {
@@ -45,29 +46,54 @@ public class PSP {
 
     synchronized public static native byte[] readRam(int address, int size);
 
-    private ArrayList<Unit> units = new ArrayList<Unit>();
-    private ArrayList<Unit> playerUnits = new ArrayList<Unit>();
+    private HashMap<Integer, Unit> units = new HashMap<Integer, Unit>();
+    private ArrayList<Unit> friendlyUnits = new ArrayList<Unit>();
     private ArrayList<Unit> enemyUnits = new ArrayList<Unit>();
-    private ArrayList<Unit> neutralUnits = new ArrayList<Unit>();
+    private ArrayList<Unit> itemUnits = new ArrayList<Unit>();
 
     private final int objectAddress = 0x01491080;
     // private final int objectAddress = 0x0144e440;
     private final int objectSize = 2136;
-    
+
     public void onUpdate() {
         units.clear();
-        playerUnits.clear();
+        friendlyUnits.clear();
         enemyUnits.clear();
-        neutralUnits.clear();
-        units = new ArrayList<Unit>();
-        for(int i = 0; i < 15; i++) {
-            byte[] b = readRam(objectAddress + (i*objectSize), objectSize);
+        itemUnits.clear();
+        for(int i = 0; i < 128; i++) {
+        // int i = 12;
+            byte[] unitRam = readRam(objectAddress + (i*objectSize), objectSize);
 
             // the unit exists if one of the two bytes at 0x854 are not 0
-            if((b[0x854] & 0xFF) != 0x0 || (b[0x855] & 0xFF) != 0x0) {
-                Unit u = new Unit(b);
-                units.add(u);
+            if((unitRam[0x854] & 0xFF) != 0x0 || (unitRam[0x855] & 0xFF) != 0x0) {
+                Unit unit = new Unit(unitRam);
+                units.put(unit.getId(), unit);
+                if(unit.isItem()) {
+                    itemUnits.add(unit);
+                }
+                else if(unit.isFriendly()) {
+                    friendlyUnits.add(unit);
+                }
+                else {
+                    enemyUnits.add(unit);
+                }
             }
         }
+
+        System.out.println("=== Friendly Units ===");
+        for(Unit cur : friendlyUnits) {
+            System.out.println(cur.getName());
+        }
+        System.out.println();
+        System.out.println("=== Enemy Units ===");
+        for(Unit cur : enemyUnits) {
+            System.out.println(cur.getName());
+        }
+        System.out.println();
+        System.out.println("=== Item Units ===");
+        for(Unit cur : itemUnits) {
+            System.out.println(cur.getName());
+        }
+        System.out.println();
     }
 }
