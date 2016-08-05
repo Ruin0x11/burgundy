@@ -210,8 +210,6 @@
   (let [unit (first (my-units))
         angle (mod (+ (angle-to unit) 225) 360)
         [ax ay] (angle->analog angle 1.0)]
-    (println (str "angle: " angle))
-    (println (str ax " " ay))
     (play-input [[[:analog ax ay] 1]])
     ;; (step)
     ))

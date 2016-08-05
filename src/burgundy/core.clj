@@ -33,11 +33,17 @@
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
            ;; (step 0)
-           (get-closer)
-           (println (get-pos (first (my-units))))
-           (println (get-player-pos))
            (println (dist (first (my-units))))
-           (println (PSP/getConfineMenuCursorPos))
+           (cond
+             (> (dist (first (my-units))) 0.7)
+             (do (println "go")
+               (get-closer))
+             :else
+             (do
+               (move-unit 0 0)
+               (end-action))
+             )
+           (println (PSP/getBattleUnitMenuCursorPos))
            )))
 
 (defn continue! []
@@ -55,7 +61,7 @@
 
     (restart!)
     (PSP/setFramelimit false)
-    (load-state "move")
+    (load-state "confine")
     (step)
     (step)
     ;; (confine-unit 6)

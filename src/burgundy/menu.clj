@@ -7,7 +7,7 @@
    :confine 5
    :status 7})
 
-(def menu-delay 2)
+(def menu-delay 6)
 
 (defn menu-key-seq
   "Calculates the optimal input sequence to traverse a menu from position start to position end."
@@ -30,6 +30,31 @@
                             (concat (repeat triggers [[[:ltrigger] 1] (wait menu-delay)])
                                     (repeat arrows [[[:up] 1] (wait menu-delay)])))))))
 
+
+(defn move-unit [x z]
+  (play-input
+   (concat
+    [(wait menu-delay)
+     [[:cross] 1]
+     (wait menu-delay)]
+    (menu-key-seq (battle-unit-cursor) 0)
+    [[[:cross] menu-delay]
+     (wait menu-delay)
+     [[:analog 0.0 1.0] 20]
+     (wait menu-delay)
+     [[:cross] menu-delay]
+     ;; TODO: gather info about when out of control
+     (wait 40)])))
+
+(defn end-action []
+  (play-input
+   (concat
+    [(wait menu-delay)
+     [[:cross] 1]
+     (wait menu-delay)]
+    (menu-key-seq (battle-unit-cursor) 5)
+    [[[:cross] 1]
+     (wait menu-delay)])))
 
 (defn confine-unit [n]
   (play-input
