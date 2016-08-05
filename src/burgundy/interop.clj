@@ -100,6 +100,15 @@
 (def ← [:left])
 (def → [:right])
 
+(def menu-delay 2)
+
+(defn press
+  ([button]
+   (press button menu-delay))
+  ([button delay]
+   [[[button] 1          ]
+    [[]       delay]]))
+
 (defn wait [frames]
   [[] frames]
   )
@@ -137,6 +146,9 @@
                [[:analog 1.0 1.0] 20]
                [[]       40]]))
 
+(defn list-units []
+  (.listUnits api))
+
 (defn pos-x [unit]
   (.getX unit))
 
@@ -146,8 +158,11 @@
 (defn pos-z [unit]
   (.getZ unit))
 
-(defn unit-name [unit]
+(defn get-name [unit]
   (.getName unit))
+
+(defn get-mana [unit]
+  (.getMana unit))
 
 (defn get-player-pos []
   (let [x (PSP/getPlayerX)
@@ -223,19 +238,39 @@
   (< (dist unit target) dis)
   )
 
+(defn too-close? [unit target]
+  (< (dist unit target) 6.0))
+
+(defn can-move?
+  "Checks if the unit that is trying to move can move to the position
+   the cursor is at.
+
+   Only to be called when the AI is trying to move something."
+  [] (PSP/canMove))
+
+(defn can-attack?
+  "Checks if the unit that was just targeted in the targeting mode
+   can be attacked (cursor is not crossed out).
+
+   Only to be called when the AI is targeting something."
+  [] (PSP/canAttack))
+
 (defn dead? [unit]
   (= 0 (.getCurrentHp unit)))
 
-(defn get-closer
-  ([unit] (get-closer unit 0.8))
-  ([unit within]
+(defn move-to
+  ([unit] (move-to unit 5.0))
+  ([unit within & [dir]]
    ;; TODO: adjust based on camera angle
    ;; TODO: calculate exact number of frames
-   (while (> (dist unit) within)
-     (println (dist unit))
-     (let [angle (mod (+ (angle-to unit) 225) 360)
-           scale (if (> (dist unit) (+ 5.0 within)) 1.0 0.6)
-           [ax ay] (angle->analog angle scale)]
-       (play-input [[[:analog ax ay] 1]])
-       ;; (step)
-       ))))
+   (let [comparator (if (= dir :away) < >)
+         angle-fn (if (= dir :away) angle-away angle-to)]
+     (while (comparator (dist unit) within)
+       (println (dist unit))
+       (let [angle (mod (+ (angle-fn unit) 225) 360)
+             scale (if (comparator (dist unit) (+ 5.0 within)) 1.0 0.75)
+             [ax ay] (angle->analog angle scale)]
+         (println [ax ay])
+         (play-input [[[:analog ax ay] 1]])
+         ;; (step)
+         )))))

@@ -31,6 +31,8 @@ public class Unit {
     private int statRes;
     private int statSpd;
 
+    private int mana;
+
     private boolean isItem;
     private int team;
 
@@ -59,13 +61,10 @@ public class Unit {
             this.team = TEAM_FRIENDLY;
         }
 
-        // 0x82a : bitfield?
         this.unitType = bb.getShort(0x30);
         this.lv = bb.getShort(0x510);
 
         this.isItem = bb.getShort(0x15a) == 1;
-        // this.isMarona = bb.getShort(0x15a) == 1;
-        // this.isPerson = bb.getShort(0x166) == 1;
 
         byte[] nameData = new byte[16];
         if(this.isFriendly()) {
@@ -78,17 +77,19 @@ public class Unit {
             // 0x1d8 : pointer to something
 
             if(this.friendlyUnitOffset != 0) {
-                // nameData = PSP.readRam(this.friendlyUnitOffset + 16, 24);
+                this.mana = PSP.readRAMU32(this.friendlyUnitOffset + 148);
+
+                nameData = PSP.readRam(this.friendlyUnitOffset + 16, 24);
 
                 // split the 0-terminated string
-                // int stringEnd = 0;
-                // for(int i = 0; i < nameData.length; i++) {
-                //     if((nameData[i] & 0xFF) == 0) {
-                //         stringEnd = i;
-                //         break;
-                //     }
-                // }
-                // nameData = Arrays.copyOfRange(nameData, 0, stringEnd);
+                int stringEnd = 0;
+                for(int i = 0; i < nameData.length; i++) {
+                    if((nameData[i] & 0xFF) == 0) {
+                        stringEnd = i;
+                        break;
+                    }
+                }
+                nameData = Arrays.copyOfRange(nameData, 0, stringEnd);
             }
         }
         else {
@@ -176,6 +177,10 @@ public class Unit {
 
     public int getSpd() {
         return statSpd;
+    }
+
+    public int getMana() {
+        return mana;
     }
 
     public boolean isItem() {

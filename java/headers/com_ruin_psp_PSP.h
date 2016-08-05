@@ -82,9 +82,9 @@ JNIEXPORT jint JNICALL Java_com_ruin_psp_PSP_readRAMU16
 /*
  * Class:     com_ruin_psp_PSP
  * Method:    readRAMU32
- * Signature: (I)J
+ * Signature: (I)I
  */
-JNIEXPORT jlong JNICALL Java_com_ruin_psp_PSP_readRAMU32
+JNIEXPORT jint JNICALL Java_com_ruin_psp_PSP_readRAMU32
   (JNIEnv *, jclass, jint);
 
 /*

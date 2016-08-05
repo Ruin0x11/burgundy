@@ -46,11 +46,52 @@ public class PSP {
 
     synchronized public static native int readRAMU16(int address);
 
-    synchronized public static native long readRAMU32(int address);
+    synchronized public static native int readRAMU32(int address);
 
     synchronized public static native float readRAMU32Float(int address);
 
     synchronized public static native byte[] readRam(int address, int size);
+
+    /**
+     * Returns the number of frames left during the transition from one unit's turn to the next.
+     * If 0, there is no transition.
+     */
+    private static int transitionFrames() {
+        return readRAMU16(0x001BC0BC);
+    }
+
+    /**
+     * Returns the current menu layer number.
+     * If 0, there are no menus open, but the player still might not be in control.
+     */
+    private static int getMenuLayer() {
+        return readRAMU16(0x001BC00C);
+    }
+
+    /**
+     * Returns true if the cursor can be moved on the map.
+     */
+    public static boolean canMoveInMap() {
+        return (getMenuLayer() == 0) && (transitionFrames() == 0);
+    }
+
+    /**
+     * When selecting a position for a unit to move to, returns true if the unit can be moved there.
+     * Intended to have no effect elsewhere.
+     */
+    public static boolean canMove() {
+        // 0x1B if not
+        return readRAMU16(0x0012e964) == 0x11;
+    }
+
+    /**
+     * When selecting something for a unit to attack, returns true if it can be attacked.
+     * Intended to have no effect elsewhere.
+     */
+    public static boolean canAttack() {
+        // 0x1C if not
+        return readRAMU16(0x0012e964) == 0x12;
+    }
 
     public static float getPlayerX() {
         return readRAMU32Float(0x0012E89C);
@@ -95,6 +136,10 @@ public class PSP {
         int cursorPos = readRAMU16(0x0011CA28);
         int pageScroll = readRAMU16(0x0011CA2C);
         return cursorPos + pageScroll;
+    }
+
+    public static long getBol() {
+        return readRAMU32(0x1545E80);
     }
 
     public List<Unit> getFriendlyUnits() {

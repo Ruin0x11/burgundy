@@ -14,8 +14,6 @@
    :confine 999
    :status 999})
 
-(def menu-delay 6)
-
 (defn menu-key-seq
   "Calculates an input sequence to traverse a menu from position start to position end."
   ([start end](println (str start " " end))(let [diff (Math/abs (- start end))
@@ -38,77 +36,107 @@
                             (concat (repeat triggers [[[:ltrigger] 1] (wait menu-delay)])
                                     (repeat arrows [[[:up] 1] (wait menu-delay)])))))))
 
+
 (defn cancel []
   (println "cancel")
   (play-input
-   [(wait 20)
-    [[:circle] 1]
-    [[] 20]]))
+   (press :circle)))
 
-(defn move-unit [unit]
-  (println "mov")
+(defn look-for-walkable
+  "Moves the cursor towards the unit until it finds a piece of terrain it can walk towards, then moves there.
+
+  Only to be called at the move menu."
+  [unit]
+  (if (> (dist unit) 1.0)
+    (if (can-move?)
+      (play-input
+       (press :cross))
+      (let [angle (mod (+ (angle-to unit) 225) 360)
+            [ax ay] (angle->analog angle 1.0)]
+        (println [ax ay])
+        (play-input [[[:analog ax ay] 1]])
+        (recur unit)))
+    (do
+      (cancel)
+      (cancel)
+      )))
+
+(defn move-unit [target dist & [dir]]
+  (println "Moving.")
   (let [angle 90
         [ax ay] (angle->analog angle 1.0)]
     (play-input
      (concat
-      [(wait 40)
-       [[:cross] 1]
-       (wait menu-delay)]
+      [(wait 10)]
+      (press :cross)
       (menu-key-seq (battle-unit-cursor) 0)
-      [[[:cross] menu-delay]
-       (wait menu-delay)]))
+      (press :cross)))
 
-    (get-closer unit 10.0)
+    (move-to target 10.0 dir)
 
-    (play-input
-     (concat
-      [(wait menu-delay)
-       [[:cross] menu-delay]
-       ;; TODO: gather info about when out of control
-       (wait 40)]))))
+    (if (can-move?)
+      (play-input
+       (concat
+        (press :cross 20)))
+      ;; TODO: fix.
+      (look-for-walkable (first (my-units))))
+    (println "Moving ended.")))
 
-(defn move-unit-quick [unit]
-  (get-closer unit 10.0)
+(defn move-unit-quick
+  [unit target dist & [dir]]
+  (println "Moving quickly.")
+  (move-to target dist dir)
+
   (play-input
    (concat
-    [(wait 10)
-     [[:cross] 1]
-     (wait menu-delay)]
-    (menu-key-seq (battle-unit-cursor) 0)
-    [[[:cross] menu-delay]
-     (wait 40)]))
+    [(wait 40)]
+    (press :cross 20)
+    (menu-key-seq (battle-unit-cursor) 0)))
+
+  (if (can-move?)
+    (play-input
+     (concat
+      (press :cross 20)))
+    (look-for-walkable (first (my-units))))
+  (println "Moving ended.")
   )
 
 (defn attack [unit]
   (println "Take this.")
   (println (str "pos:" (battle-attack-cursor)))
-  (get-closer unit)
+  (move-to unit)
   (play-input
    (concat
-    [(wait 10)
-     [[:cross] 1]
-     (wait menu-delay)]
+    [(wait 10)]
+    (press :cross)
     (menu-key-seq (battle-unit-cursor) 1)
-    [[[:cross] 1]
-     (wait 20)]))
+    (press :cross)))
 
   (play-input
    (concat
     (menu-key-seq (battle-attack-cursor) 0)
-     [[[:cross] 1]
-     (wait menu-delay)
-     [[:cross] 1]
-     (wait 80)])))
+    (press :cross)))
 
+  (if (can-attack?)
+    (play-input
+     (press :cross 80))
+    (do
+      (cancel)
+      (cancel)
+      (cancel)
+      (move-unit unit 20 :away)))
+  (println "Attack ended."))
 
 (defn end-action []
+  (println "Ending action.")
   (play-input
    (concat
-    [(wait 40)
-     [[:cross] 1]
-     (wait menu-delay)]
+    [(wait 80)]
+    (press :cross)
     (menu-key-seq (battle-unit-cursor) 5)
-    [[[:cross] 1]])))
+    (press :cross)))
+  (println "Action ended.")
+  )
 
 (defn confine-unit [n]
   (play-input
