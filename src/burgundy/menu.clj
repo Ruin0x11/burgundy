@@ -38,11 +38,9 @@
 
 
 (defn wait-until-active
-  "Bad. Use state instead."
   []
   (while (not (is-active?))
     (println "--Waiting.--")
-    (print-flags)
     (step)))
 
 (defn cancel []
@@ -154,8 +152,31 @@
 (defn confine-unit [n]
   (play-input
    (concat
-    [[[:cross] menu-delay]]
+    (press :cross)
     (menu-key-seq (battle-unit-cursor) 3)
-    [[[:cross] menu-delay]]
+    (press :cross)
     (menu-key-seq (battle-confine-cursor) n :confine)
-    [[[:cross] menu-delay]])))
+    (press :cross))))
+
+(defn start-stage []
+  (println "Stage started.")
+  (play-input
+   (concat
+    [(wait 40)]
+    )))
+
+(defn finish-stage []
+  (println "Finished stage.")
+  (play-input
+   (concat
+    ;; wait for banner to pass
+    [(wait 40)]
+    ;; skip bol increment
+    (press :cross)
+    ;; close result menu
+    (press :cross)
+    ;; skip title status in dungeons
+    ;; TODO: detect if in dungeon
+    (press :cross)
+    [(wait 40)]
+    (wait-until-active))))

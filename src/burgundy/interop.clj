@@ -131,6 +131,7 @@
 
       :else (dotimes [i frames]
               (let [bitmask (button-bits buttons)]
+                (println buttons)
                 (step bitmask))))))
 
 (defn test-input []
@@ -264,6 +265,14 @@
 
    Only to be called when the AI is targeting something."
   [] (PSP/canAttack))
+
+(defn stage-started?
+  "Checks if a stage has started."
+  [] (PSP/hasStageStarted))
+
+(defn stage-clear?
+  "Checks if the result screen after clearing a stage is currently active."
+  [] (PSP/isStageClear))
 
 (defn dead? [unit]
   (= 0 (.getCurrentHp unit)))

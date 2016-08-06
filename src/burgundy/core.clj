@@ -8,7 +8,7 @@
 
 ;; (def addresses [0x01454960 0x01454E1C 0x014975A0 0x01497A5C 0x0012E8A4 0x0012E89C 0x0012E8A0])
 
-(def run-ai? true)
+(def run-ai? false)
 
 (defn print-object [obj]
   (println (str
@@ -33,7 +33,8 @@
 (defn play [n]
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
-           (list-units)
+           (snoop-range 0x001bc010 8 64)
+           (println (is-active?))
            (when run-ai?
              (run-battle-engine))
            (step)
@@ -54,7 +55,7 @@
 
     (restart!)
     (PSP/setFramelimit false)
-    (load-state "lzarl")
+    (load-state "few")
     (step)
     (step)
     ;; (confine-unit 6)

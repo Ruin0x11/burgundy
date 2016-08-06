@@ -55,6 +55,25 @@ public class PSP {
 
     synchronized public static native byte[] readRam(int address, int size);
 
+    private static int getDialogType() {
+        return readRAMU16(0x001bc010);
+    }
+
+    public static boolean isStageClear() {
+        return getDialogType() == 0x07D1;
+    }
+
+    /**
+     * Returns true if the "Stage ----" banner is active.
+     */
+    private static boolean isStageBannerUp() {
+        return readRAMU16(0x0012e920) == 1;
+    }
+
+    public static boolean hasStageStarted() {
+        return getDialogType() == 0x271A;
+    }
+
     /**
      * Indicates whether or not a non-friendly unit is acting.
      * Always 0x0f during the non-friendly unit's turn.
@@ -83,7 +102,17 @@ public class PSP {
      * Returns true if the cursor can be moved on the map.
      */
     public static boolean canMoveInMap() {
-        return (getMenuLayer() == 0) && ((transitionFrames() == 0) || transitionFrames() > 0x40) && (transitionFromEnemyFrames() != 0x0f);
+        int menuLayer = getMenuLayer();
+        int transitionFrames = transitionFrames();
+        int enemyFrames = transitionFromEnemyFrames();
+        boolean stageBanner = isStageBannerUp();
+        // System.out.println(menuLayer + " " + transitionFrames + " " + enemyFrames + " " + stageBanner + " " + getDialogType());
+        // System.out.println(isStageClear());
+        
+        return menuLayer == 0 &&
+            (transitionFrames == 0 || transitionFrames > 0x40) &&
+            enemyFrames != 0x0f &&
+            !stageBanner;
     }
 
     public static void printFlags() {
