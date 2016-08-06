@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.nio.*;
 import java.io.*;
 import java.util.Arrays;
+import java.lang.Math;
 
 public class PSP {
 
@@ -54,6 +55,13 @@ public class PSP {
     synchronized public static native float readRAMU32Float(int address);
 
     synchronized public static native byte[] readRam(int address, int size);
+
+    /**
+     * Returns the number of units counted as summoned.
+     */
+    public int summonedUnits() {
+        return readRAMU16(0x0012F384);
+    }
 
     public Unit getUnit(int unitID) {
         return units.get(unitID);
@@ -154,6 +162,15 @@ public class PSP {
         return readRAMU16(0x0012e964) == 0x12;
     }
 
+    /**
+     * When selecting a confine target, returns true if it can be confined to.
+     * Intended to have no effect elsewhere.
+     */
+    public static boolean canConfine() {
+        // 0x1C if not
+        return readRAMU16(0x0012e964) == 0x18;
+    }
+
     public static float getPlayerX() {
         return readRAMU32Float(0x0012E89C);
     }
@@ -203,6 +220,10 @@ public class PSP {
         return readRAMU32(0x1545E80);
     }
 
+    public List<Unit> getUnits() {
+        return Collections.unmodifiableList(new ArrayList<Unit>(units.values()));
+    }
+
     public List<Unit> getFriendlyUnits() {
         return Collections.unmodifiableList(friendlyUnits);
     }
@@ -213,6 +234,33 @@ public class PSP {
 
     public List<Unit> getItemUnits() {
         return Collections.unmodifiableList(itemUnits);
+    }
+
+    /**
+     * Returns the units beneath the cursor, ordered from lowest to highest.
+     * @return <doc>
+     */
+    public List<Unit> getUnitsUnderCursor() {
+        ArrayList<Unit> cursorUnits = new ArrayList<Unit>();
+        int numberOfUnits = readRAMU16(0x0012F49C);
+        for(int i = 0; i < numberOfUnits; i++) {
+            // deal with little endian ordering of pairs of shorts
+            int id = readRAMU16(0x0012F398 + i*0x02);
+            cursorUnits.add(units.get(id));
+            System.out.println(id);
+        }
+            System.out.println();
+        return Collections.unmodifiableList(cursorUnits);
+    }
+
+    public int getSelectedUnitIndex() {
+        return readRAMU16(0x0012F498);
+    }
+
+    public Unit getSelectedUnit() {
+        List<Unit> cursorUnits = getUnitsUnderCursor();
+        int index = getSelectedUnitIndex();
+        return cursorUnits.get(index);
     }
 
     private HashMap<Integer, Unit> units = new HashMap<Integer, Unit>();
@@ -260,7 +308,7 @@ public class PSP {
 
             // the unit exists if one of the two bytes at 0x854 are not 0
             if((unitRam[0x854] & 0xFF) != 0x0 || (unitRam[0x855] & 0xFF) != 0x0) {
-                Unit unit = new Unit(unitRam);
+                Unit unit = new Unit(unitRam, i);
                 units.put(unit.getID(), unit);
                 if(unit.getCurrentHp() == 0) {
                     deadUnits.add(unit);

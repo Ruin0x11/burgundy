@@ -14,27 +14,31 @@
    :confine 999
    :status 999})
 
+(def menu-battle-unit
+  {:move 0
+   :attack 1
+   :throw 2
+   :confine 3
+   :status 4
+   :end-action 5})
+
 (defn menu-key-seq
   "Calculates an input sequence to traverse a menu from position start to position end."
-  ([start end](println (str start " " end))(let [diff (Math/abs (- start end))
-                                                 amount (if (> diff (Math/floor (/ 6 2))) (- diff (+ 1 6)) diff)]
-                                             (cond
-                                               (< start end) (apply concat
-                                                                    (concat (repeat diff [[[:down] 1] (wait menu-delay)])))
-                                               :else         (apply concat
-                                                                    (concat (repeat diff [[[:up] 1] (wait menu-delay)]))))))
+  ([start end] (menu-key-seq start end :menu))
   ([start end menu-type]
-   (let [scroll-amt (get menu-scroll-amounts menu-type)
+   (println (str start " " end))
+   (let [size (menu-type menu-sizes)
          diff (Math/abs (- start end))
-         triggers (/ diff scroll-amt)
-         arrows (mod diff scroll-amt)]
+         amount
+         (if (and (= menu-type :battle-unit)
+                  (not (is-marona? (active-unit)))
+                  (> end 4))
+           (- diff 1) diff)]
      (cond
        (< start end) (apply concat
-                            (concat (repeat triggers [[[:rtrigger] 1] (wait menu-delay)])
-                                    (repeat arrows [[[:down] 1] (wait menu-delay)])))
+                            (concat (repeat amount (press :down))))
        :else         (apply concat
-                            (concat (repeat triggers [[[:ltrigger] 1] (wait menu-delay)])
-                                    (repeat arrows [[[:up] 1] (wait menu-delay)])))))))
+                            (concat (repeat amount (press :up))))))))
 
 
 (defn wait-until-active
@@ -48,6 +52,13 @@
   (play-input
    (press :circle)))
 
+(defn select-active
+  "Try to select the active unit."
+  []
+  (if (> (dist (active-unit)) selection-dist)
+    (cancel))
+  (select-unit-in-cursor (active-unit)))
+
 (defn look-for-walkable
   "Moves the cursor towards the unit until it finds a piece of terrain it can walk towards, then moves there.
 
@@ -56,9 +67,9 @@
   (if (> (dist unit) 1.0)
     (if (can-move?)
       (do
-       (play-input
-        (press :cross))
-       (wait-until-active))
+        (play-input
+         (press :cross))
+        (wait-until-active))
       (let [angle (mod (+ (angle-to unit) 225) 360)
             [ax ay] (angle->analog angle 1.0)]
         (println [ax ay])
@@ -73,10 +84,11 @@
   (println "Moving.")
   (let [angle 90
         [ax ay] (angle->analog angle 1.0)]
+  (select-active)
     (play-input
      (concat
       (press :cross)
-      (menu-key-seq (battle-unit-cursor) 0)
+      (menu-key-seq (battle-unit-cursor) 0 :battle-unit)
       (press :cross)))
 
     (move-to target 10.0 dir)
@@ -99,7 +111,7 @@
    (concat
     [(wait 20)]
     (press :cross 20)
-    (menu-key-seq (battle-unit-cursor) 0)))
+    (menu-key-seq (battle-unit-cursor) 0 :battle-unit)))
 
   (if (can-move?)
     (do
@@ -110,15 +122,15 @@
   (println "Moving ended.")
   )
 
-(defn attack [unit]
+(defn attack [target]
   (println "Take this.")
   (println (str "pos:" (battle-attack-cursor)))
-  (move-to unit)
+  (select-unit target)
   (play-input
    (concat
     [(wait 10)]
     (press :cross)
-    (menu-key-seq (battle-unit-cursor) 1)
+    (menu-key-seq (battle-unit-cursor) 1 :battle-unit)
     (press :cross)))
 
   (play-input
@@ -135,28 +147,44 @@
       (cancel)
       (cancel)
       (cancel)
-      (move-unit unit 20 :away)))
+      (move-unit target 20 :away)))
   (println "Attack ended."))
 
 (defn end-action []
   (println "Ending action.")
+  (select-active)
   (play-input
    (concat
     [(wait 4)]
     (press :cross)
-    (menu-key-seq (battle-unit-cursor) 5)
+    (menu-key-seq (battle-unit-cursor) 5 :battle-unit)
     (press :cross)))
   (println "Action ended.")
   )
 
-(defn confine-unit [n]
+(defn confine-unit [target n]
+  (println "Confining.")
+  (select-active)
   (play-input
    (concat
     (press :cross)
-    (menu-key-seq (battle-unit-cursor) 3)
-    (press :cross)
-    (menu-key-seq (battle-confine-cursor) n :confine)
-    (press :cross))))
+    (menu-key-seq (battle-unit-cursor) 3 :battle-unit)
+    (press :cross)))
+
+  (select-unit target)
+  
+  (if (can-confine?)
+    (do
+      (play-input
+       (concat
+        (press :cross)
+        (menu-key-seq (battle-confine-cursor) n :confine)
+        (press :cross)
+        (cancel))))
+    (do
+      (cancel)
+      (cancel)
+      (move-unit target 20 :away))))
 
 (defn special-stage []
   (println "At special stage.")

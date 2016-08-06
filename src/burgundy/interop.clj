@@ -53,9 +53,23 @@
 
 ;; phantom brave
 
+(defn units [] (.getUnits api))
+
 (defn my-units [] (.getFriendlyUnits api))
 
 (defn enemy-units [] (.getEnemyUnits api))
+
+(defn item-units [] (.getItemUnits api))
+
+(defn get-unit [id] (.getUnit api))
+
+(defn active-unit [] (.getActiveUnit api))
+
+(defn units-under-cursor [] (.getUnitsUnderCursor api))
+
+(defn selected-unit-index [] (.getSelectedUnitIndex api))
+
+(defn selected-unit [] (.getSelectedUnit api))
 
 (defn island-menu-cursor [] (PSP/getIslandMenuCursorPos))
 
@@ -138,28 +152,11 @@
   (play-input
    (wait frames)))
 
-(defn test-input []
-  (play-input [[[:up]    20]
-               [[:down]  20]
-               [[:left]  20]
-               [[:right] 20]
-               [[]       40]]))
-
-(defn test-analog []
-  (play-input [[[:analog 0.7 1.0] 20]
-               [[:analog 0.2 0.0] 20]
-               [[:analog -0.1 -1.0] 20]
-               [[:analog 1.0 1.0] 20]
-               [[]       40]]))
-
 (defn list-units []
   (.listUnits api))
 
-(defn get-unit [id]
-  (.getUnit api))
-
-(defn active-unit []
-  (.getActiveUnit api))
+(defn summoned-units []
+  (.summonedUnits api))
 
 (defn print-flags []
   (PSP/printFlags))
@@ -179,6 +176,9 @@
 (defn get-mana [unit]
   (.getMana unit))
 
+(defn is-being-held? [unit]
+  (.isBeingHeld unit))
+
 (defn get-player-pos []
   (let [x (PSP/getPlayerX)
         y (PSP/getPlayerY)
@@ -190,6 +190,9 @@
         y (pos-y unit)
         z (pos-z unit)]
     [x y z]))
+
+(defn is-marona? [unit]
+  (= (get-name unit) "Marona"))
 
 (defn dist
   ([a b]          (dist (pos-x a) (pos-z a)
@@ -245,13 +248,28 @@
         y (Math/sin rad)]
     (+ x y)))
 
-(defn closest [unit coll]
-  (when (and unit (seq coll))
-    (apply min-key (partial dist unit) coll)))
+(defn closest
+  ([coll] (closest (active-unit) coll))
+  ([unit coll]
+               (when (and unit (seq coll))
+                 (apply min-key (partial dist unit) coll))))
 
-(defn in-range? [unit target dis]
-  (< (dist unit target) dis)
-  )
+(defn in-range? [unit target-unit range]
+  (<= (dist unit target-unit) range))
+
+(defn units-nearby [unit range coll]
+  (let [nearby? (fn [target-unit] (in-range? unit target-unit range))
+        nearby-units (remove #{unit} (filter nearby? coll))]
+    (seq nearby-units)))
+
+
+(def confine-radius 70)
+(def confine-upper 1000)
+(def confine-lower 1000)
+
+(defn confine-targets []
+  (let [nearby-items (units-nearby (active-unit) confine-radius (item-units))]
+    (remove is-being-held? nearby-items)))
 
 (defn too-close? [unit target]
   (< (dist unit target) 6.0))
@@ -264,17 +282,17 @@
 
 (defn can-move?
   "Checks if the unit that is trying to move can move to the position
-   the cursor is at.
-
-   Only to be called when the AI is trying to move something."
+   the cursor is at."
   [] (PSP/canMove))
 
 (defn can-attack?
   "Checks if the unit that was just targeted in the targeting mode
-   can be attacked (cursor is not crossed out).
-
-   Only to be called when the AI is targeting something."
+   can be attacked (cursor is not crossed out)."
   [] (PSP/canAttack))
+
+(defn can-confine?
+  "Checks if the unit that's being targeted can be confined to."
+  [] (PSP/canConfine))
 
 (defn stage-started?
   "Checks if a stage has started."
@@ -291,8 +309,10 @@
 (defn dead? [unit]
   (= 0 (.getCurrentHp unit)))
 
+(def selection-dist 3.0)
+
 (defn move-to
-  ([unit] (move-to unit 3.0))
+  ([unit] (move-to unit selection-dist))
   ([unit within & [dir]]
    ;; TODO: adjust based on camera angle
    ;; TODO: calculate exact number of frames
@@ -307,3 +327,26 @@
          (play-input [[[:analog ax ay] 1]])
          ;; (step)
          )))))
+
+(defn select-unit-in-cursor
+  "When there are multiple units near the cursor, cycles to the given one."
+  [unit]
+  (let [cursor-units (units-under-cursor)
+        current (selected-unit-index)
+        target (.indexOf cursor-units unit)
+        presses
+        (cond
+          (= target -1)      0
+          (> current target) (+ target current)
+          :else              (- target current))]
+    (println (str current " " target " " presses))
+    (play-input
+     (apply concat
+            (concat
+             (repeat presses (press :select 10)))))))
+
+(defn select-unit
+  "Moves the cursor to and selects the given unit."
+  [unit]
+  (move-to unit)
+  (select-unit-in-cursor unit))

@@ -11,7 +11,7 @@ public class Unit {
     public static final int TEAM_ENEMY = 1;
     public static final int TEAM_NEUTRAL = 2;
 
-    private short id;
+    private int id;
 
     private float x;
     private float y;
@@ -34,14 +34,17 @@ public class Unit {
     private int mana;
 
     private boolean isItem;
+    private boolean isBeingHeld;
     private int team;
 
     // if a unit is confined (friendly), this points to the memory location of that unit's stats
     private int friendlyUnitOffset;
 
-        public Unit(byte[] data) {
+    public Unit(byte[] data, int id) {
         ByteBuffer bb = ByteBuffer.wrap(data);
         bb.order(ByteOrder.LITTLE_ENDIAN);
+
+        this.id = id;
 
         this.x = bb.getFloat(0x74);
         this.y = bb.getFloat(0x78);
@@ -112,7 +115,7 @@ public class Unit {
         this.statRes = bb.getInt(0x5A4 + 12);
         this.statSpd = bb.getInt(0x5A4 + 16);
 
-        this.id = bb.getShort(0x852);
+        this.isBeingHeld = bb.getInt(0x94) == 0;
 
         // try {
         //     FileOutputStream fos = new FileOutputStream("/home/prin/dump/" + this.name + ".dump");
@@ -181,6 +184,10 @@ public class Unit {
 
     public boolean isItem() {
         return isItem;
+    }
+
+    public boolean isBeingHeld() {
+        return isBeingHeld;
     }
 
     public boolean isFriendly() {

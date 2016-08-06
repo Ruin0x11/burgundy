@@ -33,12 +33,12 @@
 (defn play [n]
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
-           ;; (snoop-range 0x001bc010 8 64)
-           (println (.toString (active-unit)))
+           ;; (list-units)
+           ; (snoop-range 0x0012f390 4 64)
+
            (when run-ai?
              (run-battle-engine))
-           (step)
-           (println (PSP/getBattleAttackMenuCursorPos)))))
+           (step))))
 
 (defn continue! []
   (println "continue")
