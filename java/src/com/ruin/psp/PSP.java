@@ -55,12 +55,22 @@ public class PSP {
 
     synchronized public static native byte[] readRam(int address, int size);
 
+    public Unit getUnit(int unitID) {
+        return units.get(unitID);
+    }
+
+    public Unit getActiveUnit() {
+        int activeID = readRAMU16(0x0012F388);
+        return getUnit(activeID);
+    }
+
     private static int getDialogType() {
         return readRAMU16(0x001bc010);
     }
 
     public static boolean isStageClear() {
-        return getDialogType() == 0x07D1;
+        int type = getDialogType();
+        return type == 0x07D0 || type == 0x07D1;
     }
 
     /**
@@ -68,6 +78,13 @@ public class PSP {
      */
     private static boolean isStageBannerUp() {
         return readRAMU16(0x0012e920) == 1;
+    }
+
+    /**
+     * Returns true if a special level banner is active.
+     */
+    public static boolean isSpecialStageScreenUp() {
+        return getDialogType() == 0x7E1;
     }
 
     public static boolean hasStageStarted() {
@@ -244,7 +261,7 @@ public class PSP {
             // the unit exists if one of the two bytes at 0x854 are not 0
             if((unitRam[0x854] & 0xFF) != 0x0 || (unitRam[0x855] & 0xFF) != 0x0) {
                 Unit unit = new Unit(unitRam);
-                units.put(unit.getId(), unit);
+                units.put(unit.getID(), unit);
                 if(unit.getCurrentHp() == 0) {
                     deadUnits.add(unit);
                 }
@@ -267,22 +284,22 @@ public class PSP {
     public void listUnits() {
         System.out.println("=== Friendly Units ===");
         for(Unit cur : friendlyUnits) {
-            System.out.println(cur.getName());
+            System.out.println(cur.getName() + " [" + cur.getID() + "]");
         }
         System.out.println();
         System.out.println("=== Enemy Units ===");
         for(Unit cur : enemyUnits) {
-            System.out.println(cur.getName());
+            System.out.println(cur.getName() + " [" + cur.getID() + "]");
         }
         System.out.println();
         System.out.println("=== Neutral Units ===");
         for(Unit cur : neutralUnits) {
-            System.out.println(cur.getName());
+            System.out.println(cur.getName() + " [" + cur.getID() + "]");
         }
         System.out.println();
         System.out.println("=== Item Units ===");
         for(Unit cur : itemUnits) {
-            System.out.println(cur.getName());
+            System.out.println(cur.getName() + " [" + cur.getID() + "]");
         }
         System.out.println();
     }

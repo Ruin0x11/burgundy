@@ -127,7 +127,7 @@ public class Unit {
 
     }
 
-    public int getId() {
+    public int getID() {
         return id;
     }
 

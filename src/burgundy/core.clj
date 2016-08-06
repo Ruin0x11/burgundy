@@ -33,8 +33,8 @@
 (defn play [n]
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
-           (snoop-range 0x001bc010 8 64)
-           (println (is-active?))
+           ;; (snoop-range 0x001bc010 8 64)
+           (println (.toString (active-unit)))
            (when run-ai?
              (run-battle-engine))
            (step)

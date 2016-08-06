@@ -6,6 +6,9 @@
   (let [the-unit (first (my-units))
         target (closest the-unit (enemy-units))]
     (cond
+      (at-special-stage?)
+      (special-stage)
+      
       (stage-started?)
       (start-stage)
 
@@ -31,7 +34,9 @@
             (move-unit (closest (first (my-units)) (enemy-units)) 10.0)
             (when (in-range? (first (my-units)) target 20)
               (attack target))))
-        (end-action)
+        (println (str "clear:" (stage-clear?)))
+        (when (not (stage-clear?))
+          (end-action))
         (wait-until-active))
 
       (stage-clear?)

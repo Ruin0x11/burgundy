@@ -134,6 +134,10 @@
                 (println buttons)
                 (step bitmask))))))
 
+(defn do-nothing [frames]
+  (play-input
+   (wait frames)))
+
 (defn test-input []
   (play-input [[[:up]    20]
                [[:down]  20]
@@ -150,6 +154,12 @@
 
 (defn list-units []
   (.listUnits api))
+
+(defn get-unit [id]
+  (.getUnit api))
+
+(defn active-unit []
+  (.getActiveUnit api))
 
 (defn print-flags []
   (PSP/printFlags))
@@ -273,6 +283,10 @@
 (defn stage-clear?
   "Checks if the result screen after clearing a stage is currently active."
   [] (PSP/isStageClear))
+
+(defn at-special-stage?
+  "Checks if the special map screen is active."
+  [] (PSP/isSpecialStageScreenUp))
 
 (defn dead? [unit]
   (= 0 (.getCurrentHp unit)))

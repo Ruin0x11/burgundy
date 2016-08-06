@@ -158,19 +158,21 @@
     (menu-key-seq (battle-confine-cursor) n :confine)
     (press :cross))))
 
-(defn start-stage []
-  (println "Stage started.")
+(defn special-stage []
+  (println "At special stage.")
   (play-input
    (concat
-    [(wait 40)]
-    )))
+    (press :cross 20)))
+  (wait-until-active))
+
+(defn start-stage []
+  (println "Stage started.")
+  (wait-until-active))
 
 (defn finish-stage []
   (println "Finished stage.")
   (play-input
    (concat
-    ;; wait for banner to pass
-    [(wait 40)]
     ;; skip bol increment
     (press :cross)
     ;; close result menu
