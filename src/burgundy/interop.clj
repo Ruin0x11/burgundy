@@ -13,8 +13,18 @@
 
 ;; emulator-specific
 
+(def user-home (File. (System/getProperty "user.home")))
+
+(def phantom-brave-jp
+  (File. user-home "game/phantom-brave-jp.iso"))
+(def phantom-brave-us
+  (File. user-home "game/phantom-brave-us.iso"))
+
 (defn shutdown! []
   (PSP/shutdown))
+
+(defn restart! []
+  (PSP/startEmulator (.getCanonicalPath phantom-brave-us)))
 
 (defn do-update []
   (.onUpdate api)
@@ -33,13 +43,6 @@
    (PSP/step)
    (do-update)))
 
-(def user-home (File. (System/getProperty "user.home")))
-
-(def phantom-brave-jp
-  (File. user-home "game/phantom-brave-jp.iso"))
-(def phantom-brave-us
-  (File. user-home "game/phantom-brave-us.iso"))
-
 (def save-state-directory
   (File. user-home "build/burgundy/save-states/"))
 
@@ -50,6 +53,10 @@
   (let [save (get-save-name name)]
     (assert (.exists save))
     (PSP/loadSaveState (.getCanonicalPath save))))
+
+(defn save-state [name]
+  (let [save (get-save-name name)]
+    (PSP/saveSaveState (.getCanonicalPath save))))
 
 ;; phantom brave
 
@@ -106,14 +113,14 @@
    :ltrigger  0x0100
    :rtrigger  0x0200})
 
-(def □ [:square])
-(def △ [:triangle])
-(def ○ [:circle])
-(def × [:cross])
-(def ↑ [:up])
-(def ↓ [:down])
-(def ← [:left])
-(def → [:right])
+(def □ :square)
+(def △ :triangle)
+(def ○ :circle)
+(def × :cross)
+(def ↑ :up)
+(def ↓ :down)
+(def ← :left)
+(def → :right)
 
 (def menu-delay 2)
 
@@ -145,7 +152,6 @@
 
       :else (dotimes [i frames]
               (let [bitmask (button-bits buttons)]
-                (println buttons)
                 (step bitmask))))))
 
 (defn do-nothing [frames]
@@ -176,8 +182,17 @@
 (defn get-mana [unit]
   (.getMana unit))
 
+(defn get-remaining-move [unit]
+  (.getRemainingMove unit))
+
+(defn can-move? [unit]
+  (> (get-remaining-move unit) 0))
+
 (defn is-being-held? [unit]
   (.isBeingHeld unit))
+
+(defn dump [unit]
+  (.dump unit))
 
 (defn get-player-pos []
   (let [x (PSP/getPlayerX)
@@ -272,7 +287,7 @@
     (remove is-being-held? nearby-items)))
 
 (defn too-close? [unit target]
-  (< (dist unit target) 6.0))
+  (< (dist unit target) 2.0))
 
 (defn is-active?
   "Returns true if the cursor can be moved on the map.

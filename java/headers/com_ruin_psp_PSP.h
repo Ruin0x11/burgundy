@@ -57,6 +57,14 @@ JNIEXPORT void JNICALL Java_com_ruin_psp_PSP_loadSaveState
 
 /*
  * Class:     com_ruin_psp_PSP
+ * Method:    saveSaveState
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_com_ruin_psp_PSP_saveSaveState
+  (JNIEnv *, jclass, jstring);
+
+/*
+ * Class:     com_ruin_psp_PSP
  * Method:    setFramelimit
  * Signature: (Z)V
  */

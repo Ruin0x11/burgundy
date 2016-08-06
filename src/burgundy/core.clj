@@ -24,18 +24,25 @@
 (defn snoop-range [start byte-offset count]
   (snoop (take count (range start (+ (* byte-offset count) start) byte-offset))))
 
-(defn confine-state []
-  (load-state "confine"))
+(defn run-once []
+  (save-state "temp")
+  (step)
+  (run-battle-engine))
 
-(defn restart! []
-  (PSP/startEmulator (.getCanonicalPath phantom-brave-us)))
+(defn rewind []
+  (load-state "temp")
+  (step)
+  (run-battle-engine))
+
+(defn rewind-stop []
+  (load-state "temp"))
 
 (defn play [n]
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
            ;; (list-units)
            ; (snoop-range 0x0012f390 4 64)
-
+           (dump (active-unit))
            (when run-ai?
              (run-battle-engine))
            (step))))
@@ -43,6 +50,7 @@
 (defn continue! []
   (println "continue")
   (play Integer/MAX_VALUE))
+
 
 (defn -main
   [& args]

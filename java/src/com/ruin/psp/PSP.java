@@ -44,6 +44,8 @@ public class PSP {
     // synchronized public static native void loadSaveState(int slot);
     synchronized public static native void loadSaveState(String filename);
 
+    synchronized public static native void saveSaveState(String filename);
+
     synchronized public static native void setFramelimit(boolean framelimit);
 
     synchronized public static native int readRAMU8(int address);

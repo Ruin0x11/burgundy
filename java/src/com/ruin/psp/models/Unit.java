@@ -7,6 +7,8 @@ import com.ruin.psp.PSP;
 
 public class Unit {
 
+    private byte[] data;
+
     public static final int TEAM_FRIENDLY = 0;
     public static final int TEAM_ENEMY = 1;
     public static final int TEAM_NEUTRAL = 2;
@@ -37,12 +39,19 @@ public class Unit {
     private boolean isBeingHeld;
     private int team;
 
+    private float maxMove;
+    private float remainingMove;
+
+    private int remove;
+
     // if a unit is confined (friendly), this points to the memory location of that unit's stats
     private int friendlyUnitOffset;
 
     public Unit(byte[] data, int id) {
         ByteBuffer bb = ByteBuffer.wrap(data);
         bb.order(ByteOrder.LITTLE_ENDIAN);
+
+        this.data = data;
 
         this.id = id;
 
@@ -117,13 +126,12 @@ public class Unit {
 
         this.isBeingHeld = bb.getInt(0x94) == 0;
 
-        // try {
-        //     FileOutputStream fos = new FileOutputStream("/home/prin/dump/" + this.name + ".dump");
-        //     fos.write(data);
-        //     fos.close();
-        // } catch (Exception e) {
-        //     e.printStackTrace();
-        // }
+        this.maxMove = bb.getFloat(0x610);
+        this.remainingMove = bb.getFloat(0x614);
+
+        System.out.println(bb.getShort(0x83C));
+
+        float rotation = bb.getFloat(0x16C);
     }
 
     public void update(byte[] data) {
@@ -178,6 +186,14 @@ public class Unit {
         return statSpd;
     }
 
+    public float getMaxMove() {
+        return maxMove;
+    }
+
+    public float getRemainingMove() {
+        return remainingMove;
+    }
+
     public int getMana() {
         return mana;
     }
@@ -200,6 +216,16 @@ public class Unit {
 
     public boolean isNeutral() {
         return this.team == TEAM_NEUTRAL;
+    }
+
+    public void dump() {
+        try {
+            FileOutputStream fos = new FileOutputStream("/home/prin/dump/" + this.name + ".dump");
+            fos.write(this.data);
+            fos.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public String toString() {

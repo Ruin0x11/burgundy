@@ -99,7 +99,7 @@
          (press :cross 20))
         (wait-until-active))
       ;; TODO: fix.
-      (look-for-walkable (first (my-units))))
+      (look-for-walkable (active-unit)))
     (println "Moving ended.")))
 
 (defn move-unit-quick
@@ -118,7 +118,7 @@
       (play-input
        (press :cross 20))
       (wait-until-active))
-    (look-for-walkable (first (my-units))))
+    (look-for-walkable (active-unit)))
   (println "Moving ended.")
   )
 

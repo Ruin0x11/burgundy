@@ -3,8 +3,7 @@
             [burgundy.menu :refer :all]))
 
 (defn run-battle-engine []
-  (let [the-unit (first (my-units))
-        target (closest the-unit (enemy-units))]
+  (let [target (closest (active-unit) (enemy-units))]
     (cond
       (at-special-stage?)
       (special-stage)
@@ -12,39 +11,40 @@
       (stage-started?)
       (start-stage)
 
-      (not (or (nil? target) (nil? the-unit)))
+      (not (or (nil? target) (nil? (active-unit))))
       (do
-        (when (> (dist the-unit) 10.0)
+        (when (> (dist (active-unit)) 10.0)
           (cancel))
-        (when (not= (selected-unit) (active-unit))
-          (select-unit-in-cursor (active-unit)))
+
         (cond
           (and (is-marona? (active-unit))
-               (< (summoned-units) 3))
+               (< (summoned-units) 6))
           (let [targets (confine-targets)
                 selected (closest targets)]
-            (println (get-name selected))
-            (when
-                (too-close? (active-unit) selected)
-              (move-unit target 10.0 :away))
-            (confine-unit selected 7))
+            (println (str " *** Trying to summon on " (get-name selected)))
 
-          (too-close? the-unit target)
-          (move-unit target 20.0 :away)
+            (confine-unit selected 9))
 
-          (in-range? the-unit target 20)
+          (too-close? (active-unit) target)
           (do
-            (println (dist the-unit target))
-            (println (get-pos the-unit))
+            (println " *** Running away")
+            (move-unit target 20.0 :away))
+
+          (in-range? (active-unit) target 3)
+          (do
+            (println " *** Attacking")
+            (println (dist (active-unit) target))
+            (println (get-pos (active-unit)))
             (println (get-pos target))
             (attack target))
           :else
           (do
-            (println (dist the-unit target))
-            (println (get-pos the-unit))
+            (println " *** Moving & Attacking")
+            (println (dist (active-unit) target))
+            (println (get-pos (active-unit)))
             (println (get-pos target))
-            (move-unit (closest (first (my-units)) (enemy-units)) 10.0)
-            (when (in-range? (first (my-units)) target 20)
+            (move-unit (closest (active-unit) (enemy-units)) 10.0)
+            (when (in-range? (active-unit) target 20)
               (attack target))))
         (when (not (stage-clear?))
           (end-action))
