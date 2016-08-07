@@ -188,6 +188,11 @@
 (defn can-move? [unit]
   (> (get-remaining-move unit) 0))
 
+(defn has-attacked?
+  ([] (has-attacked? (active-unit)))
+  ([unit]
+   (.hasAttacked unit)))
+
 (defn is-being-held? [unit]
   (.isBeingHeld unit))
 
@@ -269,8 +274,10 @@
                (when (and unit (seq coll))
                  (apply min-key (partial dist unit) coll))))
 
-(defn in-range? [unit target-unit range]
-  (<= (dist unit target-unit) range))
+(defn in-range?
+  ([target-unit range] (in-range? (active-unit) target-unit range))
+  ([unit target-unit range]
+   (<= (dist unit target-unit) range)))
 
 (defn units-nearby [unit range coll]
   (let [nearby? (fn [target-unit] (in-range? unit target-unit range))
@@ -286,8 +293,10 @@
   (let [nearby-items (units-nearby (active-unit) confine-radius (item-units))]
     (remove is-being-held? nearby-items)))
 
-(defn too-close? [unit target]
-  (< (dist unit target) 2.0))
+(defn too-close?
+  ([target] (too-close? (active-unit) target))
+  ([unit target]
+   (< (dist unit target) 2.0)))
 
 (defn is-active?
   "Returns true if the cursor can be moved on the map.

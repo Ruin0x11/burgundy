@@ -10,4 +10,5 @@
   ;; :jvm-opts ["-XX:OnError=gdb - %p" "-Djava.library.path=ppsspp/build/lib"]
   :jvm-opts ["-Djava.library.path=ppsspp/build/lib"]
   :resource-paths ["java/dist/psp.jar"]
-  :profiles {:uberjar {:aot :all}})
+  :profiles {:uberjar {:aot :all}}
+  :aliases {"ai" ["exec" "-ep" "(use 'burgundy.core) (swap! run-ai? (fn [_] true)) (-main)"]})

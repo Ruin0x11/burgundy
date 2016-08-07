@@ -10,22 +10,33 @@
     "nope"
     (let [task (first (dequeue! battle-tasks))]
       (try
-        (println "====Task started.====")
+        (println (str "====Task " (:name task) " started.===="))
         (run-task task)
-        (println "====Task ended.====")
+        (println (str "====Task " (:name task) " ended.===="))
         (catch Exception e
           (println "Exception in battle engine!")
           (.printStackTrace e)))
       (recur))))
 
+(def-task attack-nearest-task []
+  :desc ["Looking for nearest unit to attack."]
+  :priority 20
+  :max-attempts 3
+  :goal-state (has-attacked? (active-unit))
+  :action (let [target (closest (enemy-units))]
+            (cond (too-close? target)       (move-unit target 20.0 :away)
+                  (not (in-range? target 10)) (move-unit target 10.0))
+            (when (in-range? (active-unit) target 10)
+              (attack target))))
+
 (def-task confine-task [id unit]
   :desc ["Confine unit " id " to " (get-name unit)]
   :priority 10
-  :test (and (is-marona? (active-unit))
-               (< (summoned-units) 6))
-  :action ((let [targets (confine-targets)
+  :max-attempts 3
+  :goal-state (> (summoned-units 6))
+  :action (let [targets (confine-targets)
                 selected (closest targets)]
-            (confine-unit selected 9))))
+            (confine-unit selected 9)))
 
 (defn run-battle-engine-old
   []

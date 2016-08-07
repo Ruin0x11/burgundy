@@ -6,46 +6,51 @@
 (defn add-task
   "Adds the provided task to the priority queue."
   [task queue]
-    (do (swap! queue conj [task (:priority task)])))
+  (do (swap! queue conj [task (:priority task)])))
 
 (defmacro def-task
   "Creates a task.
 
   :priority - task priority, with lower values deemed higher priority
-  :action - function to run when executing the test
-  :test - function to determine if the desired state is achieved. the action is not run if this is true
-  :on-failure - function to run if the function provided by :test returns false"
-  [task-name args & {:keys [desc priority test action on-failure]}]
+  :max-attempts - number of times to rerun the task if the goal state isn't reached
+  :action - function to run when executing the task
+  :goal-state - function to determine if the desired state is achieved. the action is not run if this is true
+  :on-failure - function to run if the function provided by :goal-state returns false"
+  [task-name args & {:keys [desc priority max-attempts goal-state action on-failure]}]
   `(defn ~task-name ~args
      (let [full-name# (name '~task-name)
            full-desc# (str ~@desc)]
        {:name full-name#
         :desc full-desc#
         :priority ~priority
-        :test (fn [] (do ~test))
-        :action (fn [] (do ~@action))
-        :on-failure (fn [] (do ~@on-failure))
+        :max-attempts ~max-attempts
+        :goal-state (fn [] (do ~goal-state))
+        :action (fn [] (do ~action))
+        :on-failure (fn [] (do ~on-failure))
         })))
 
 (defn run-task
-  [task]
-  (let [{:keys [name desc priority action test on-failure]} task]
-    (println (str "TASK: " name))
-    (println desc)
-    (if (test)
-      (do
-        (println (str name ": test passed"))
-        (action))
-      (do
-        (println (str name ": test failed"))
-        (when-not (or (test)
-                      (nil? on-failure))
-          (on-failure))))))
+  ([task]
+   (println (str "TASK: " (:name task)))
+   (println (str "DESC: " (:desc task)))
+   (run-task task 0))
+  ([task attempts]
+   (let [{:keys [name desc priority max-attempts action goal-state on-failure]} task]
+     (cond
+       (goal-state)              (println (str name ": goal-state reached"))
+       (= max-attempts attempts) (do
+                                   (println (str name ": goal-state not reached"))
+                                   (when (not (nil? on-failure))
+                                     (on-failure)))
+       :else                      (do
+                                    (println (str "Attempt " (+ 1 attempts)))
+                                    (action)
+                                    (recur task (+ 1 attempts)))))))
 
 (def-task level-item [id lvl amt]
   :desc ["Levels item " id " to level " lvl]
   :priority 0
-  :test (< lvl 5)
+  :goal-state (< lvl 5)
   :action ((+ lvl amt))
   :on-failure (println "nope"))
 

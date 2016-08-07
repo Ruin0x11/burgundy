@@ -41,8 +41,8 @@ public class Unit {
 
     private float maxMove;
     private float remainingMove;
-
     private int remove;
+    private boolean hasAttacked;
 
     // if a unit is confined (friendly), this points to the memory location of that unit's stats
     private int friendlyUnitOffset;
@@ -129,7 +129,7 @@ public class Unit {
         this.maxMove = bb.getFloat(0x610);
         this.remainingMove = bb.getFloat(0x614);
 
-        // System.out.println(bb.getShort(0x83C));
+        this.hasAttacked = bb.get(0x0624) == 1;
 
         float rotation = bb.getFloat(0x16C);
     }
@@ -204,6 +204,10 @@ public class Unit {
 
     public boolean isBeingHeld() {
         return isBeingHeld;
+    }
+
+    public boolean hasAttacked() {
+        return hasAttacked;
     }
 
     public boolean isFriendly() {
