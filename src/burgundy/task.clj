@@ -42,12 +42,14 @@
        (goal-state)                   (println (str name ": goal-state reached"))
        (or (nil? max-attempts)
            (< attempts max-attempts)) (do
+                                        (println (str name ": goal-state not reached"))
+
                                         (println (str "Attempt " (+ 1 attempts)))
                                         (action)
                                         (recur task (+ 1 attempts)))
 
        :else                          (do
-                                   (println (str name ": goal-state not reached"))
+                                        (println "Task failed!")
                                    (when (not (nil? on-failure))
                                      (on-failure)))))))
 

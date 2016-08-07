@@ -55,15 +55,15 @@ public class Unit {
 
         this.id = id;
 
-        this.x = bb.getFloat(0x74);
-        this.y = bb.getFloat(0x78);
-        this.z = bb.getFloat(0x7C);
+        this.x = bb.getFloat(0x64);
+        this.y = bb.getFloat(0x68);
+        this.z = bb.getFloat(0x6C);
 
-        this.currentHP = bb.getInt(0x5BC);
+        this.currentHP = bb.getInt(0x5AC);
 
-        short teamFlagA = bb.getShort(0x152);
-        short teamFlagB = bb.getShort(0x154);
-        short teamFlagC = bb.getShort(0x156);
+        short teamFlagA = bb.getShort(0x142);
+        short teamFlagB = bb.getShort(0x144);
+        short teamFlagC = bb.getShort(0x146);
 
         if(teamFlagA == 2) {
             this.team = TEAM_NEUTRAL;
@@ -73,22 +73,18 @@ public class Unit {
             this.team = TEAM_FRIENDLY;
         }
 
-        this.unitType = bb.getShort(0x30);
-        this.lv = bb.getShort(0x510);
+        this.unitType = bb.getShort(0x20);
+        this.lv = bb.getShort(0x500);
 
-        this.isItem = bb.getShort(0x15a) == 1;
+        this.isItem = bb.getShort(0x14a) == 1;
 
         if(this.isFriendly()) {
-            this.friendlyUnitOffset = bb.getInt(0x584) - 0x8800000;
+            this.friendlyUnitOffset = bb.getInt(0x574) - 0x8800000;
             this.name = "friendly";
             // 0x58c : pointer to held item's info
             // 0x594 : pointer to a skill
             // 0x10 : pointer to something
             // 0x1d8 : pointer to something
-
-            // if(bb.getInt(0x594) > 0) {
-            //     System.out.println(getStringAt(bb, bb.getInt(0x594) - 0x8800000 + 12, 31));
-            // }
 
             if(this.friendlyUnitOffset != 0) {
                 this.mana = PSP.readRAMU32(this.friendlyUnitOffset + 148);
@@ -99,7 +95,7 @@ public class Unit {
         else {
             // get 16 bytes at 0x2C8
             byte[] nameData = new byte[16];
-            bb.position(0x2C8);
+            bb.position(0x2B8);
             bb.get(nameData);
 
             try {
@@ -117,21 +113,21 @@ public class Unit {
             // u2 level, u4 exp, u2 identifier
         }
 
-        this.statHP = bb.getInt(0xFC);
-        this.statAtk = bb.getInt(0x5A4);
-        this.statDef = bb.getInt(0x5A4 + 4);
-        this.statInt = bb.getInt(0x5A4 + 8);
-        this.statRes = bb.getInt(0x5A4 + 12);
-        this.statSpd = bb.getInt(0x5A4 + 16);
+        this.statHP = bb.getInt(0xEC);
+        this.statAtk = bb.getInt(0x594);
+        this.statDef = bb.getInt(0x594 + 4);
+        this.statInt = bb.getInt(0x594 + 8);
+        this.statRes = bb.getInt(0x594 + 12);
+        this.statSpd = bb.getInt(0x594 + 16);
 
-        this.isBeingHeld = bb.getInt(0x190) == 0;
+        this.isBeingHeld = bb.getInt(0x180) == 0;
 
-        this.maxMove = bb.getFloat(0x610);
-        this.remainingMove = bb.getFloat(0x614);
+        this.maxMove = bb.getFloat(0x600);
+        this.remainingMove = bb.getFloat(0x604);
 
-        this.hasAttacked = bb.get(0x0624) == 1;
-
-        float rotation = bb.getFloat(0x16C);
+        this.hasAttacked = bb.getInt(0x848) == 1;
+        
+        float rotation = bb.getFloat(0x15C);
     }
 
     public void update(byte[] data) {

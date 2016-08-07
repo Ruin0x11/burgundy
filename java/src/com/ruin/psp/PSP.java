@@ -173,6 +173,10 @@ public class PSP {
         return readRAMU16(0x0012e964) == 0x18;
     }
 
+    public static boolean hasAttacked() {
+        return ((readRAMU16(0x0012e94c) >> 1) & 1) == 1;
+    }
+
     public static float getPlayerX() {
         return readRAMU32Float(0x0012E89C);
     }
@@ -251,7 +255,7 @@ public class PSP {
             cursorUnits.add(units.get(id));
             System.out.println(id);
         }
-            System.out.println();
+        System.out.println();
         return Collections.unmodifiableList(cursorUnits);
     }
 
@@ -272,7 +276,7 @@ public class PSP {
     private ArrayList<Unit> itemUnits = new ArrayList<Unit>();
     private ArrayList<Unit> deadUnits = new ArrayList<Unit>();
 
-    private final int objectAddress = 0x01491080;
+    private final int objectAddress = 0x01491090;
     // private final int objectAddress = 0x0144e440;
     private final int objectSize = 2136;
 
@@ -308,8 +312,8 @@ public class PSP {
         for(int i = 0; i < getTotalUnits(); i++) {
             byte[] unitRam = readRam(objectAddress + (i*objectSize), objectSize);
 
-            // the unit exists if one of the two bytes at 0x854 are not 0
-            if((unitRam[0x854] & 0xFF) != 0x0 || (unitRam[0x855] & 0xFF) != 0x0) {
+            // the unit exists if one of the two bytes at 0x844 are not 0
+            if((unitRam[0x844] & 0xFF) != 0x0 || (unitRam[0x845] & 0xFF) != 0x0) {
                 Unit unit = new Unit(unitRam, i);
                 units.put(unit.getID(), unit);
                 if(unit.getCurrentHp() == 0) {

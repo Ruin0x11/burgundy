@@ -16,11 +16,11 @@
   :desc ["Looking for nearest unit to attack."]
   :priority 20
   :max-attempts 3
-  :goal-state (has-attacked? (active-unit))
+  :goal-state (has-attacked?)
   :action (let [target (closest (enemy-units))]
             (cond (too-close? target)         (move-unit target 20.0 :away)
-                  (not (in-range? target 10)) (move-unit target 10.0))
-            (when (in-range? (active-unit) target 10)
+                  (not (in-range? target 30)) (move-unit target 10.0))
+            (when (in-range? (active-unit) target 30)
               (attack target))))
 
 (def-task confine-task [id unit]

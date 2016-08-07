@@ -44,7 +44,6 @@
 (defn wait-until-active
   []
   (while (not (is-active?))
-    (println "--Waiting.--")
     (step)))
 
 (defn cancel []
@@ -142,7 +141,8 @@
     (do
       (play-input
        (press :cross))
-      (wait-until-active))
+      (wait-until-active)
+      (do-nothing 10))
     (do
       (cancel)
       (cancel)

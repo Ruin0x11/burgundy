@@ -1,6 +1,7 @@
 (ns burgundy.interop
   (:require [burgundy.repl :refer :all]
-            [burgundy.queue :refer :all])
+            [burgundy.queue :refer :all]
+            [clojure.pprint :refer (cl-format)])
   (:import com.ruin.psp.PSP)
   (:import java.io.File))
 
@@ -204,6 +205,14 @@
 
 (defn dump [unit]
   (.dump unit))
+
+(defn unit-byte
+  ([n] (unit-byte (active-unit) n))
+  ([unit n]
+   (nth (unit-memory (get-id unit)) n)))
+
+(defn to-bits [i]
+  (str "2r" (Integer/toBinaryString i)))
 
 (defn get-player-pos []
   (let [x (PSP/getPlayerX)

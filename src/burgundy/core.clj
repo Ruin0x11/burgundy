@@ -43,6 +43,7 @@
            ;; (list-units)
            ;; (snoop-range 0x01458b20 4 64)
            (dump (active-unit))
+           (println (has-attacked?))
            (when @run-ai?
              (run-battle-engine))
            (step))))
