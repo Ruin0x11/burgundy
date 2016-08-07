@@ -40,7 +40,7 @@
 (defn play [n]
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
-           (list-units)
+           ;; (list-units)
            ;; (snoop-range 0x01458b20 4 64)
            (dump (active-unit))
            (when @run-ai?
@@ -65,7 +65,7 @@
 
     (restart!)
     (PSP/setFramelimit false)
-    (load-state "few")
+    (load-state "near")
     (step)
     (step)
     ;; (confine-unit 6)

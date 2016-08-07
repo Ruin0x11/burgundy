@@ -4,9 +4,11 @@
 (def battle-tasks (atom (priority-map)))
 
 (defn add-task
-  "Adds the provided task to the priority queue."
-  [task queue]
-  (do (swap! queue conj [task (:priority task)])))
+  "Adds the provided task to the given priority queue."
+  ;;TODO: only temporary
+  ([task] (add-task task battle-tasks))
+  ([task queue]
+   (do (swap! queue conj [task (:priority task)]))))
 
 (defmacro def-task
   "Creates a task.

@@ -40,7 +40,7 @@
    (PSP/nstep bitmask 0.0 0.0)
    (do-update))
   ([]
-   (PSP/step)
+   (PSP/nstep 0x0 0.0 0.0)
    (do-update)))
 
 (def save-state-directory
@@ -140,6 +140,9 @@
   [buttons]
   (reduce #(bit-or %1 (%2 button-masks)) 0x0000 buttons))
 
+(defn get-name [unit]
+  (.getName unit))
+
 (defn play-input
   "Sends input commands.
   Expects a vector of pairs of a vector of button keywords and the number of frames to hold them for."
@@ -156,7 +159,7 @@
 
 (defn do-nothing [frames]
   (play-input
-   (wait frames)))
+   [(wait frames)]))
 
 (defn list-units []
   (.listUnits api))
@@ -176,8 +179,8 @@
 (defn pos-z [unit]
   (.getZ unit))
 
-(defn get-name [unit]
-  (.getName unit))
+(defn get-id [unit]
+  (.getID unit))
 
 (defn get-mana [unit]
   (.getMana unit))
@@ -282,8 +285,7 @@
 (defn units-nearby [unit range coll]
   (let [nearby? (fn [target-unit] (in-range? unit target-unit range))
         nearby-units (remove #{unit} (filter nearby? coll))]
-    (seq nearby-units)))
-
+    (set nearby-units)))
 
 (def confine-radius 70)
 (def confine-upper 1000)
@@ -291,7 +293,7 @@
 
 (defn confine-targets []
   (let [nearby-items (units-nearby (active-unit) confine-radius (item-units))]
-    (remove is-being-held? nearby-items)))
+    (set (remove is-being-held? nearby-items))))
 
 (defn too-close?
   ([target] (too-close? (active-unit) target))
@@ -333,7 +335,7 @@
 (defn dead? [unit]
   (= 0 (.getCurrentHp unit)))
 
-(def selection-dist 3.0)
+(def selection-dist 2.0)
 
 (defn move-to
   ([unit] (move-to unit selection-dist))
@@ -357,12 +359,15 @@
   [unit]
   (let [cursor-units (units-under-cursor)
         current (selected-unit-index)
-        target (.indexOf cursor-units unit)
+        ;; by id, not exact copy
+        ;; TODO: should this be the default?
+        target (.indexOf (map get-id cursor-units) (get-id unit))
         presses
         (cond
           (= target -1)      0
           (> current target) (+ target current)
           :else              (- target current))]
+    (println (map get-name cursor-units))
     (println (str current " " target " " presses))
     (play-input
      (apply concat

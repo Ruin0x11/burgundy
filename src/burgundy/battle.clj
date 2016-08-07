@@ -2,7 +2,8 @@
   (:require [burgundy.interop :refer :all]
             [burgundy.menu :refer :all]
             [burgundy.task :refer :all]
-            [burgundy.queue :refer :all]))
+            [burgundy.queue :refer :all]
+            [clojure.set :refer [intersection]]))
 
 (defn run-battle-engine []
   (if (empty? @battle-tasks)
@@ -24,19 +25,31 @@
   :max-attempts 3
   :goal-state (has-attacked? (active-unit))
   :action (let [target (closest (enemy-units))]
-            (cond (too-close? target)       (move-unit target 20.0 :away)
+            (cond (too-close? target)         (move-unit target 20.0 :away)
                   (not (in-range? target 10)) (move-unit target 10.0))
             (when (in-range? (active-unit) target 10)
               (attack target))))
+
+(def-task confine-near-unit-task [id target]
+  :desc ["Confining a unit near " (get-name target)]
+  :priority 25
+  :max-attempts 3
+  :goal-state (> (summoned-units) 4)
+  :action (let [confinable (confine-targets)
+                confinable-near-target (intersection confinable
+                                                          (units-nearby target confine-radius (item-units)))
+                selected (closest target confinable-near-target)]
+            (println "Selected " (get-name selected))
+            (confine-unit selected id)))
 
 (def-task confine-task [id unit]
   :desc ["Confine unit " id " to " (get-name unit)]
   :priority 10
   :max-attempts 3
-  :goal-state (> (summoned-units 6))
+  :goal-state (> (summoned-units) 6)
   :action (let [targets (confine-targets)
                 selected (closest targets)]
-            (confine-unit selected 9)))
+            (confine-unit selected id)))
 
 (defn run-battle-engine-old
   []

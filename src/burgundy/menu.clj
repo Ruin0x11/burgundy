@@ -56,7 +56,7 @@
   "Try to select the active unit."
   []
   (if (> (dist (active-unit)) selection-dist)
-    (cancel))
+    (move-to (active-unit)))
   (select-unit-in-cursor (active-unit)))
 
 (defn look-for-walkable
