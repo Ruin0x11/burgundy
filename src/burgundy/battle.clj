@@ -1,8 +1,34 @@
 (ns burgundy.battle
   (:require [burgundy.interop :refer :all]
-            [burgundy.menu :refer :all]))
+            [burgundy.menu :refer :all]
+            [burgundy.task :refer :all]
+            [burgundy.queue :refer :all]))
 
 (defn run-battle-engine []
+  (if (empty? @battle-tasks)
+    ;; (println "Nothing to do...")
+    "nope"
+    (let [task (first (dequeue! battle-tasks))]
+      (try
+        (println "====Task started.====")
+        (run-task task)
+        (println "====Task ended.====")
+        (catch Exception e
+          (println "Exception in battle engine!")
+          (.printStackTrace e)))
+      (recur))))
+
+(def-task confine-task [id unit]
+  :desc ["Confine unit " id " to " (get-name unit)]
+  :priority 10
+  :test (and (is-marona? (active-unit))
+               (< (summoned-units) 6))
+  :action ((let [targets (confine-targets)
+                selected (closest targets)]
+            (confine-unit selected 9))))
+
+(defn run-battle-engine-old
+  []
   (let [target (closest (active-unit) (enemy-units))]
     (cond
       (at-special-stage?)
@@ -17,14 +43,6 @@
           (cancel))
 
         (cond
-          (and (is-marona? (active-unit))
-               (< (summoned-units) 6))
-          (let [targets (confine-targets)
-                selected (closest targets)]
-            (println (str " *** Trying to summon on " (get-name selected)))
-
-            (confine-unit selected 9))
-
           (too-close? (active-unit) target)
           (do
             (println " *** Running away")

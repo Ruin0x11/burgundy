@@ -129,7 +129,7 @@ public class Unit {
         this.maxMove = bb.getFloat(0x610);
         this.remainingMove = bb.getFloat(0x614);
 
-        System.out.println(bb.getShort(0x83C));
+        // System.out.println(bb.getShort(0x83C));
 
         float rotation = bb.getFloat(0x16C);
     }
