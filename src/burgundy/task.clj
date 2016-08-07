@@ -11,7 +11,7 @@
    (do (swap! queue conj [task (:priority task)]))))
 
 (defmacro def-task
-  "Creates a task.
+  "Creates a task for the AI to run.
 
   :priority - task priority, with lower values deemed higher priority
   :max-attempts - number of times to rerun the task if the goal state isn't reached
@@ -39,24 +39,29 @@
   ([task attempts]
    (let [{:keys [name desc priority max-attempts action goal-state on-failure]} task]
      (cond
-       (goal-state)              (println (str name ": goal-state reached"))
-       (= max-attempts attempts) (do
+       (goal-state)                   (println (str name ": goal-state reached"))
+       (or (nil? max-attempts)
+           (< attempts max-attempts)) (do
+                                        (println (str "Attempt " (+ 1 attempts)))
+                                        (action)
+                                        (recur task (+ 1 attempts)))
+
+       :else                          (do
                                    (println (str name ": goal-state not reached"))
                                    (when (not (nil? on-failure))
-                                     (on-failure)))
-       :else                      (do
-                                    (println (str "Attempt " (+ 1 attempts)))
-                                    (action)
-                                    (recur task (+ 1 attempts)))))))
+                                     (on-failure)))))))
 
-(def-task level-item [id lvl amt]
-  :desc ["Levels item " id " to level " lvl]
-  :priority 0
-  :goal-state (< lvl 5)
-  :action ((+ lvl amt))
-  :on-failure (println "nope"))
+(defmacro doseq-indexed [index-sym [item-sym coll] & body]
+  `(doseq [[~index-sym ~item-sym] (map list (range) ~coll)]
+     ~@body))
 
-
-(def-task nothing-task []
-  :action ((println "go"))
-  )
+(defn list-tasks
+  ([] (list-tasks battle-tasks))
+  ([queue]
+   (println "Tasks")
+   (if (empty? @queue)
+     (println "No tasks running.")
+     (do
+       (println "Running: " (:name (peek @queue)) "----" (:desc (peek @queue)))
+       (doseq-indexed i [task (rest @queue)]
+                      (println i ": " (:name task) "----" (:desc task)))))))

@@ -8,7 +8,7 @@
 
 ;; (def addresses [0x01454960 0x01454E1C 0x014975A0 0x01497A5C 0x0012E8A4 0x0012E89C 0x0012E8A0])
 
-(def run-ai? (atom true))
+(def run-ai? (atom false))
 
 (defn print-object [obj]
   (println (str
@@ -65,9 +65,8 @@
 
     (restart!)
     (PSP/setFramelimit false)
-    (load-state "near")
+    (load-state "go")
     (step)
     (step)
-    ;; (confine-unit 6)
     (continue!)
     (shutdown!)))

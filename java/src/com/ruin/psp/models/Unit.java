@@ -124,7 +124,7 @@ public class Unit {
         this.statRes = bb.getInt(0x5A4 + 12);
         this.statSpd = bb.getInt(0x5A4 + 16);
 
-        this.isBeingHeld = bb.getInt(0x94) == 0;
+        this.isBeingHeld = bb.getInt(0x190) == 0;
 
         this.maxMove = bb.getFloat(0x610);
         this.remainingMove = bb.getFloat(0x614);

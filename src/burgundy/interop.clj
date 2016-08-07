@@ -91,13 +91,16 @@
 (defn battle-confine-cursor [] (PSP/getConfineMenuCursorPos))
 
 (defn contiguous-memory
-  "Returns count wrapped buffers of size bytes starting at offset."
+  "Returns count arrays of size bytes starting at offset."
   [offset size count]
   (let [mem (PSP/readRam offset (* count size))
         objs (partition size mem)]
     (->> objs
          (map byte-array)
          (map bytes))))
+
+(defn unit-memory [n]
+  (seq (nth (contiguous-memory 0x01491080 2136 36) n)))
 
 (def button-masks
   {:square    0x8000
