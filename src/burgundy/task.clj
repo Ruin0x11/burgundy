@@ -1,4 +1,5 @@
 (ns burgundy.task
+  (:require [burgundy.interop :refer [doseq-indexed]])
   (:use clojure.data.priority-map))
 
 (def battle-tasks (atom (priority-map)))
@@ -53,10 +54,6 @@
                                    (when (not (nil? on-failure))
                                      (on-failure)))))))
 
-(defmacro doseq-indexed [index-sym [item-sym coll] & body]
-  `(doseq [[~index-sym ~item-sym] (map list (range) ~coll)]
-     ~@body))
-
 (defn list-tasks
   ([] (list-tasks battle-tasks))
   ([queue]
@@ -64,6 +61,6 @@
    (if (empty? @queue)
      (println "No tasks running.")
      (do
-       (println "Running: " (:name (peek @queue)) "----" (:desc (peek @queue)))
+       (println "Running: " (:name (first (peek @queue))) "----" (:desc (first (peek @queue))))
        (doseq-indexed i [task (rest @queue)]
-                      (println i ": " (:name task) "----" (:desc task)))))))
+                      (println i ": " (:name (first task)) "----" (:desc (first task))))))))

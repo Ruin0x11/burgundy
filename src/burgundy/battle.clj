@@ -10,13 +10,33 @@
   :priority 9999
   :max-attempts 1
   :goal-state false
+  ;;TODO: detect if changing units
   :action (end-action))
+
+(def-task special-stage-task []
+  :desc ["Confirming special stage screen."]
+  :priority 0
+  :goal-state (stage-started?)
+  :action (special-stage))
+
+(def-task start-stage-task []
+  :desc ["Starting stage."]
+  :priority 1
+  :goal-state (not (stage-started?))
+  :action (start-stage))
+
+(def-task finish-stage-task []
+  :desc ["Finishing stage."]
+  :priority 0
+  :goal-state (not (stage-clear?))
+  :action (finish-stage))
 
 (def-task attack-nearest-task []
   :desc ["Looking for nearest unit to attack."]
   :priority 20
   :max-attempts 3
-  :goal-state (has-attacked?)
+  :goal-state (or (has-attacked?)
+                  (not (has-move-remaining?)))
   :action (let [target (closest (enemy-units))]
             (cond (too-close? target)         (move-unit target 20.0 :away)
                   (not (in-range? target 30)) (move-unit target 10.0))
@@ -100,12 +120,25 @@
       (finish-stage))))
 
 (defn update-battle-engine []
-  (list-tasks)
-  (when (< (summoned-units) 6)
-    (add-task (confine-closest-task 0)))
-  (when (> (count (enemy-units)) 0)
-    (add-task (attack-nearest-task)))
-  (add-task (end-action-task)))
+  (cond
+    (at-special-stage?)
+    (add-task (special-stage-task))
+
+    (stage-started?)
+    (add-task (start-stage-task))
+
+    (stage-clear?)
+    (add-task (finish-stage-task))
+
+    :else
+    (do
+      (when (and (is-marona?)
+                 (< (summoned-units) 6))
+        (add-task (confine-closest-task 0)))
+      (when (> (count (enemy-units)) 0)
+        (add-task (attack-nearest-task)))
+      (add-task (end-action-task))
+      (list-tasks))))
 
 (defn run-battle-engine []
   (if (empty? @battle-tasks)

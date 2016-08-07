@@ -9,7 +9,7 @@
 
 (def menu-sizes
   {:attack 999
-   :battle-unit 5 ;; plus one if marona
+   :battle-unit 6 ;; plus one if marona
    :battle-main 4
    :confine 999
    :status 999})
@@ -22,29 +22,57 @@
    :status 4
    :end-action 5})
 
+(defn adjust-menu-size [size menu-type]
+  (if (and (not true)
+           (= menu-type :battle-unit))
+    (- size 1)
+    size))
+
+(defn adjust-menu-pos [pos menu-type]
+  (if (and (not true)
+           (= menu-type :battle-unit)
+           (> pos 3))
+    (- pos 1)
+    pos))
+
+(clojure.pprint/pprint (map #(mod (- % 0) 6) (range 0 6)))
+
+(defn get-menu-buttons [start end size diff]
+  (if (< (mod diff size) (/ size 2))
+    (if (> start end)
+      [:up   :ltrigger]
+      [:down :rtrigger]
+      )
+    (if (> start end)
+[:down :ltrigger]
+      [:up   :rtrigger]
+      )))
+
 (defn menu-key-seq
   "Calculates an input sequence to traverse a menu from position start to position end."
-  ([start end] (menu-key-seq start end :menu))
-  ([start end menu-type]
-   (println (str start " " end))
-   (let [size (menu-type menu-sizes)
-         diff (Math/abs (- start end))
-         amount
-         (if (and (= menu-type :battle-unit)
-                  (not (is-marona? (active-unit)))
-                  (> end 4))
-           (- diff 1) diff)]
-     (cond
-       (< start end) (apply concat
-                            (concat (repeat amount (press :down))))
-       :else         (apply concat
-                            (concat (repeat amount (press :up))))))))
+  ([start end menu-type] (menu-key-seq start end menu-type
+                                       (menu-type menu-sizes)))
+  ([start end menu-type size]
+   (let [size (adjust-menu-size size menu-type)
+         start (adjust-menu-pos start menu-type)
+         end (adjust-menu-pos end menu-type)
+         diff (Math/abs (- end start))
+         amount (if (> diff (Math/floor (/ size 2)))
+                  (Math/abs (- diff size))
+                  diff)
+         [arrow trigger] (get-menu-buttons start end size diff)]
+     (apply concat
+            (concat (repeat amount (press arrow)))))))
 
 
 (defn wait-until-active
   []
-  (while (not (is-active?))
-    (step)))
+  (println "---Waiting.---")
+  (while (not (can-enter-input?))
+    (step))
+  (println "===Active.===")
+  (do-nothing 10)
+  )
 
 (defn cancel []
   (println "cancel")
@@ -55,7 +83,10 @@
   "Try to select the active unit."
   []
   (if (> (dist (active-unit)) selection-dist)
-    (move-to (active-unit)))
+    ;; canceling also cancels previous moves, so only cancel if I haven't moved.
+    (if (has-moved?)
+      (move-to (active-unit))
+      (cancel)))
   (select-unit-in-cursor (active-unit)))
 
 (defn look-for-walkable
@@ -83,7 +114,7 @@
   (println "Moving.")
   (let [angle 90
         [ax ay] (angle->analog angle 1.0)]
-  (select-active)
+    (select-active)
     (play-input
      (concat
       (press :cross)
@@ -108,7 +139,7 @@
 
   (play-input
    (concat
-    [(wait 20)]
+    (wait 20)
     (press :cross 20)
     (menu-key-seq (battle-unit-cursor) 0 :battle-unit)))
 
@@ -127,14 +158,14 @@
   (select-unit target)
   (play-input
    (concat
-    [(wait 10)]
+    (wait 10)
     (press :cross)
     (menu-key-seq (battle-unit-cursor) 1 :battle-unit)
     (press :cross)))
 
   (play-input
    (concat
-    (menu-key-seq (battle-attack-cursor) 0)
+    (menu-key-seq (battle-attack-cursor) 0 )
     (press :cross)))
 
   (if (can-attack?)
@@ -142,24 +173,28 @@
       (play-input
        (press :cross))
       (wait-until-active)
-      (do-nothing 10))
+      (if (not (has-attacked?))
+        (recur target)
+        (println "Attack ended.")))
     (do
       (cancel)
       (cancel)
       (cancel)
       (move-unit target 20 :away)))
-  (println "Attack ended."))
+  )
 
 (defn end-action []
   (println "Ending action.")
   (select-active)
   (play-input
    (concat
-    [(wait 4)]
+    (wait 4)
     (press :cross)
     (menu-key-seq (battle-unit-cursor) 5 :battle-unit)
-    (press :cross)))
+    (press :cross 20)
+    (wait 20)))
   (println "Action ended.")
+  (wait-until-active)
   )
 
 (defn confine-unit [target n]
@@ -190,8 +225,7 @@
   (println "At special stage.")
   (play-input
    (concat
-    (press :cross 20)))
-  (wait-until-active))
+    (press :cross 20))))
 
 (defn start-stage []
   (println "Stage started.")
@@ -208,5 +242,5 @@
     ;; skip title status in dungeons
     ;; TODO: detect if in dungeon
     (press :cross)
-    [(wait 40)]
+    (wait 40)
     (wait-until-active))))

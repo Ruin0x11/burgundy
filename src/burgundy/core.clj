@@ -16,13 +16,11 @@
             (seq (:name obj))
             )))
 
-(defn snoop [addr]
-  (doseq [i addr]
-    (printf "RAM at %x: %08X %d %.6f\n" i (PSP/readRAMU32 i) (PSP/readRAMU16 i) (PSP/readRAMU32Float i)))
-  (println))
-
 (defn snoop-range [start byte-offset count]
-  (snoop (take count (range start (+ (* byte-offset count) start) byte-offset))))
+  (let [addresses (take count (range start (+ (* byte-offset count) start) byte-offset))]
+     (doseq-indexed i [addr addresses]
+       (printf "0x%8X (+%04X): %08X %d %.6f\n" addr (* byte-offset i) (PSP/readRAMU32 addr) (PSP/readRAMU16 addr) (PSP/readRAMU32Float addr)))
+   (println)))
 
 (defn run-once []
   (save-state "temp")
@@ -41,10 +39,9 @@
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
            ;; (list-units)
-           ;; (snoop-range 0x01458b20 4 64)
+           (snoop-range (unit-offset (active-unit)) 4 64)
            (dump (active-unit))
-           (println (has-attacked?))
-           (when @run-ai?
+           (if @run-ai?
              (run-battle-engine))
            (step))))
 

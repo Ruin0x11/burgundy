@@ -207,7 +207,9 @@ public class PSP {
     }
 
     public static int getBattleAttackMenuCursorPos() {
-        return readRAMU16(0x0014AC94);
+        int cursorPos = readRAMU16(0x0014AC94);
+        int pageScroll = readRAMU16(0x0014AC98);
+        return cursorPos + pageScroll;
     }
 
     public static int getStatusMenuCursorPos() {

@@ -18,6 +18,9 @@ public class Unit {
     private float x;
     private float y;
     private float z;
+    private float velX;
+    private float velY;
+    private float velZ;
 
     private int currentHP;
     private short lv;
@@ -32,6 +35,8 @@ public class Unit {
     private int statInt;
     private int statRes;
     private int statSpd;
+
+    private int numSkills;
 
     private int mana;
 
@@ -58,6 +63,9 @@ public class Unit {
         this.x = bb.getFloat(0x64);
         this.y = bb.getFloat(0x68);
         this.z = bb.getFloat(0x6C);
+        this.velX = bb.getFloat(0x80);
+        this.velY = bb.getFloat(0x84);
+        this.velZ = bb.getFloat(0x88);
 
         this.currentHP = bb.getInt(0x5AC);
 
@@ -88,6 +96,7 @@ public class Unit {
 
             if(this.friendlyUnitOffset != 0) {
                 this.mana = PSP.readRAMU32(this.friendlyUnitOffset + 148);
+                this.numSkills = PSP.readRAMU16(this.friendlyUnitOffset + 616);
 
                 this.name = PSP.getStringAt(bb, this.friendlyUnitOffset + 16, 24);
             }
@@ -126,7 +135,7 @@ public class Unit {
         this.remainingMove = bb.getFloat(0x604);
 
         this.hasAttacked = bb.getInt(0x848) == 1;
-        
+
         float rotation = bb.getFloat(0x15C);
     }
 
@@ -152,6 +161,18 @@ public class Unit {
 
     public float getZ() {
         return z;
+    }
+
+    public float getVelX() {
+        return velX;
+    }
+
+    public float getVelY() {
+        return velY;
+    }
+
+    public float getVelZ() {
+        return velZ;
     }
 
     public int getCurrentHp() {
@@ -192,6 +213,10 @@ public class Unit {
 
     public int getMana() {
         return mana;
+    }
+
+    public int getNumSkills() {
+        return numSkills;
     }
 
     public boolean isItem() {

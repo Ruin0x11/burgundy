@@ -100,9 +100,6 @@
          (map byte-array)
          (map bytes))))
 
-(defn unit-memory [n]
-  (seq (nth (contiguous-memory 0x01491080 2136 36) n)))
-
 (def button-masks
   {:square    0x8000
    :triangle  0x1000
@@ -136,7 +133,7 @@
     [[]       delay]]))
 
 (defn wait [frames]
-  [[] frames]
+  [[[] frames]]
   )
 
 (defn button-bits
@@ -163,7 +160,7 @@
 
 (defn do-nothing [frames]
   (play-input
-   [(wait frames)]))
+   (wait frames)))
 
 (defn list-units []
   (.listUnits api))
@@ -183,17 +180,46 @@
 (defn pos-z [unit]
   (.getZ unit))
 
+(defn vel-x [unit]
+  (.getVelX unit))
+
+(defn vel-y [unit]
+  (.getVelY unit))
+
+(defn vel-z [unit]
+  (.getVelZ unit))
+
+(defn num-skills [unit]
+  (.getNumSkills))
+
+(defn is-in-air?
+  ([] (is-in-air? (active-unit)))
+  ([unit] (> (Math/abs (vel-y unit)) 1.0)))
+
+(defn is-moving?
+  ([] (is-moving? (active-unit)))
+  ([unit]
+   (or (> (Math/abs (vel-x unit 1.0)))
+       (> (Math/abs (vel-x unit 1.0)))
+       (> (Math/abs (vel-x unit 1.0))))))
+
 (defn get-id [unit]
   (.getID unit))
 
 (defn get-mana [unit]
   (.getMana unit))
 
+(defn get-max-move [unit]
+  (.getRemainingMove unit))
+
 (defn get-remaining-move [unit]
   (.getRemainingMove unit))
 
-(defn can-move? [unit]
-  (> (get-remaining-move unit) 0))
+(defn has-moved? []
+  (not= (get-max-move (active-unit)) (get-remaining-move (active-unit))))
+
+(defn has-move-remaining? []
+  (> (get-remaining-move (active-unit)) 0))
 
 (defn has-attacked?
   ([] (has-attacked? (active-unit)))
@@ -206,10 +232,19 @@
 (defn dump [unit]
   (.dump unit))
 
+(def unit-start-offset 0x01491090)
+(def unit-size 2136)
+
+(defn unit-memory [unit]
+  (seq (nth (contiguous-memory unit-start-offset unit-size 36) (get-id unit))))
+
+(defn unit-offset [unit]
+  (+ unit-start-offset (* (get-id unit) unit-size)))
+
 (defn unit-byte
   ([n] (unit-byte (active-unit) n))
   ([unit n]
-   (nth (unit-memory (get-id unit)) n)))
+   (nth (unit-memory unit) n)))
 
 (defn to-bits [i]
   (str "2r" (Integer/toBinaryString i)))
@@ -226,8 +261,10 @@
         z (pos-z unit)]
     [x y z]))
 
-(defn is-marona? [unit]
-  (= (get-name unit) "Marona"))
+(defn is-marona?
+  ([] (is-marona? (active-unit)))
+  ([unit]
+   (= (get-name unit) "Marona")))
 
 (defn dist
   ([a b]          (dist (pos-x a) (pos-z a)
@@ -286,8 +323,8 @@
 (defn closest
   ([coll] (closest (active-unit) coll))
   ([unit coll]
-               (when (and unit (seq coll))
-                 (apply min-key (partial dist unit) coll))))
+   (when (and unit (seq coll))
+     (apply min-key (partial dist unit) coll))))
 
 (defn in-range?
   ([target-unit range] (in-range? (active-unit) target-unit range))
@@ -347,6 +384,10 @@
 (defn dead? [unit]
   (= 0 (.getCurrentHp unit)))
 
+(defn can-enter-input? []
+  (and (is-active?)
+       (not (is-in-air?))))
+
 (def selection-dist 2.0)
 
 (defn move-to
@@ -391,3 +432,7 @@
   [unit]
   (move-to unit)
   (select-unit-in-cursor unit))
+
+(defmacro doseq-indexed [index-sym [item-sym coll] & body]
+  `(doseq [[~index-sym ~item-sym] (map list (range) ~coll)]
+     ~@body))
