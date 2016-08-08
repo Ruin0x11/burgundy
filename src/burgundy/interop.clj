@@ -7,6 +7,8 @@
   (:import com.ruin.psp.PSP)
   (:import java.io.File))
 
+(declare dist)
+
 (clojure.lang.RT/loadLibrary "psp")
 
 (def api nil)
@@ -220,9 +222,20 @@
 (defn-unit vel-z [unit]
   (.getVelZ unit))
 
+(defn-unit get-pos [unit]
+  (let [x (pos-x unit)
+        y (pos-y unit)
+        z (pos-z unit)]
+    [x y z]))
+
+(defn get-player-pos []
+  (let [x (PSP/getPlayerX)
+        y (PSP/getPlayerY)
+        z (PSP/getPlayerZ)]
+    [x y z]))
+
 (defn-unit get-skills [unit]
   (.getSkills unit))
-
 
 (defn get-skill-type [skill-or-id]
   (.getSkillType api
@@ -230,72 +243,19 @@
                    skill-or-id
                    (.getID skill-or-id))))
 
-(def skill-shapes
-  {0 :sphere
-   1 :column
-   2 :triangle})
-
-;; TODO: temporary
-(defn is-spherical? [skill-or-id]
-  (= (:sphere skill-shapes)
-     (.getShape (get-skill-type skill-or-id))))
-
-(defn get-skill-shape [skill-type]
-  (get (.getShape skill-type) skill-shapes))
-
-(defn get-skill-range [skill-type]
-  (.getRange skill-type))
-
-(defn get-skill-radius [skill-type]
-  (.getRadius skill-type))
-
-(defn get-skill-limit-upper [skill-type]
-  (.getLimitUpper skill-type))
-
-(defn get-skill-limit-lower [skill-type]
-  (.getLimitLower skill-type))
-
-(defn get-skill-info [skill-or-id]
+(defn skill-name [skill-or-id]
   (let [skill (get-skill-type skill-or-id)]
-    {:shape  (get-skill-shape skill)
-     :range  (get-skill-range skill)
-     :radius (get-skill-radius skill)
-     :upper  (get-skill-limit-upper skill)
-     :lower  (get-skill-limit-lower skill)}))
+    (.getName skill)))
 
-(defn skill-range-horizontal
-  "Given a skill, returns the maximum and minimum distance it can reach on the x-z plane."
-  [skill-or-id]
-  (let [{:keys shape range radius} (get-skill-info skill-or-id)]
-    (case shape
-      :sphere   [0 (+ range radius)]
-      :column   [(- range radius) (+ range radius)]
-      :triangle [0 range])))
+(defn skill-cost [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (.getSpCost skill)))
 
-(defn skill-range-vertical
-  "Given a skill, returns the maximum and minimum distance it can reach on the x-y plane."
-  [skill-or-id]
-  (let [{:keys upper lower} (get-skill-info skill-or-id)]
-    [upper lower]))
-
-(defn-unit is-skill-in-range? [unit target skill-or-id]
-  (let [[x-min x-max] (skill-range-horizontal skill-or-id)
-        [y-min y-max] (skill-range-horizontal skill-or-id)
-        {:keys shape} (get-skill-info skill-or-id))]
-  (case shape
-    :sphere true
-    :column true
-    :triangle true))
-
-(defn within-area? [pos min-pos max-pos]
-  (every? true? (concat
-                 (map >= pos min-pos)
-                 (map <= pos max-pos))))
-
-(defn print-skill [skill]
-  (println (.getID skill)
-           (.getLevel skill)
-           (.getExp skill)))
+(defn print-skill [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (println (.getName skill)
+             (.getDesc skill)
+             (.getSpCost skill))))
 
 (defn-unit is-in-air? [unit]
   (> (Math/abs (vel-y unit)) 1.0))
@@ -337,6 +297,9 @@
 (defn-unit is-friendly? [unit]
   (.isFriendly unit))
 
+(defn-unit is-marona? [unit]
+  (= (get-name unit) "Marona"))
+
 (defn-unit dump [unit]
   (.dump unit))
 
@@ -355,28 +318,101 @@
 (defn to-bits [i]
   (str "2r" (Integer/toBinaryString i)))
 
-(defn get-player-pos []
-  (let [x (PSP/getPlayerX)
-        y (PSP/getPlayerY)
-        z (PSP/getPlayerZ)]
-    [x y z]))
+(def skill-shapes
+  {0 :sphere
+   1 :column
+   2 :triangle})
 
-(defn-unit get-pos [unit]
-  (let [x (pos-x unit)
-        y (pos-y unit)
-        z (pos-z unit)]
-    [x y z]))
+;; TODO: temporary
+(defn is-spherical? [skill-or-id]
+  (= (:sphere skill-shapes)
+     (.getShape (get-skill-type skill-or-id))))
 
-(defn-unit is-marona? [unit]
-  (= (get-name unit) "Marona"))
+(defn get-skill-shape [skill-type]
+  (get skill-shapes (.getShape skill-type)))
 
-(defn dist
+(defn get-skill-range [skill-type]
+  (.getRange skill-type))
+
+(defn get-skill-radius [skill-type]
+  (.getRadius skill-type))
+
+(defn get-skill-limit-upper [skill-type]
+  (.getLimitUpper skill-type))
+
+(defn get-skill-limit-lower [skill-type]
+  (.getLimitLower skill-type))
+
+(defn get-skill-info [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    {:shape  (get-skill-shape skill)
+     :range  (get-skill-range skill)
+     :radius (get-skill-radius skill)
+     :upper  (get-skill-limit-upper skill)
+     :lower  (get-skill-limit-lower skill)}))
+
+(defn skill-range-horizontal
+  "Given a skill, returns the maximum and minimum distance it can reach on the x-z plane."
+  [skill-or-id]
+  (let [{:keys [shape range radius]} (get-skill-info skill-or-id)]
+    (case shape
+      :sphere   [0 (+ range radius)]
+      :column   [(- range radius) (+ range radius)]
+      :triangle [0 range])))
+
+(defn skill-range-vertical
+  "Given a skill, returns the maximum and minimum distance it can reach on the x-y plane."
+  [skill-or-id]
+  (let [{:keys [upper lower]} (get-skill-info skill-or-id)]
+    [upper lower]))
+
+(defn within-area? [pos min-pos max-pos]
+  (every? true? (concat
+                 (map >= pos min-pos)
+                 (map <= pos max-pos))))
+
+(defn within-sphere? [pos center radius]
+  (<= (dist pos center) radius))
+
+(defn within-cylinder? [pos center radius vert-range]
+  (let [[x y z]       pos
+        [cx cy cz]    center
+        [min-y max-y] vert-range]
+    (println (<= min-y y max-y)
+             (dist x z cx cz)
+             (<= (dist x z cx cz) radius)
+             radius)
+    (and (<= min-y y max-y)
+         (<= (dist x z cx cz) radius))))
+
+(defn-unit is-skill-in-range?
+  [unit target skill-or-id]
+  (let [[x-min x-max] (skill-range-horizontal skill-or-id)
+        [y-min y-max] (skill-range-vertical skill-or-id)
+        vert-range [(- (pos-y unit) y-min)
+                    (+ (pos-y unit) y-max)]
+        {:keys [shape range]} (get-skill-info skill-or-id)
+        my-pos (get-pos unit)
+        target-pos (get-pos target)]
+    (println my-pos target-pos shape range vert-range x-min x-max)
+    (case shape
+      :sphere (within-cylinder? target-pos my-pos (+ x-max (get-remaining-move)) vert-range)
+      :column false
+      :triangle false)))
+
+(defn dist-unit
   ([a b]          (dist (pos-x a) (pos-z a)
                         (pos-x b) (pos-z b)))
   ([unit]         (dist (pos-x unit) (pos-z unit)
-                        (PSP/getPlayerX) (PSP/getPlayerZ)))
-  ([x1 z1 x2 z2] (Math/sqrt (+ (Math/pow (- x1 x2) 2)
-                               (Math/pow (- z1 z2) 2)))))
+                        (PSP/getPlayerX) (PSP/getPlayerZ))))
+
+(defn dist
+  ([x1 z1 x2 z2]  (dist [x1 0 z1]
+                        [x2 0 z2]))
+  ([[x1 y1 z1] [x2 y2 z2]]
+   (Math/sqrt (+ (Math/pow (- x1 x2) 2)
+                 (Math/pow (- y1 y2) 2)
+                 (Math/pow (- z1 z2) 2)))))
 
 (defn deg->rad [deg] (* deg (/ Math/PI 180)))
 (defn rad->deg [rad] (mod (* rad (/ 180 Math/PI)) 360))
@@ -426,10 +462,10 @@
 
 (defn-unit closest [unit coll]
   (when (and unit (seq coll))
-    (apply min-key (partial dist unit) coll)))
+    (apply min-key (partial dist-unit unit) coll)))
 
 (defn-unit in-range? [unit target-unit range]
-  (<= (dist unit target-unit) range))
+  (<= (dist-unit unit target-unit) range))
 
 (defn-unit units-nearby [unit range coll]
   (let [nearby? (fn [target-unit] (in-range? unit target-unit range))
@@ -445,7 +481,7 @@
     (set (remove is-being-held? nearby-items))))
 
 (defn-unit too-close? [unit target]
-  (< (dist unit target) 2.0))
+  (< (dist-unit unit target) 2.0))
 
 (defn is-active?
   "Returns true if the cursor can be moved on the map.
@@ -495,12 +531,10 @@
    ;; TODO: calculate exact number of frames
    (let [comparator (if (= dir :away) < >)
          angle-fn (if (= dir :away) angle-away angle-to)]
-     (while (comparator (dist unit) within)
-       ;; (println (dist unit))
+     (while (comparator (dist-unit unit) within)
        (let [angle (mod (+ (angle-fn unit) 225) 360)
-             scale (if (comparator (dist unit) (+ 5.0 within)) 1.0 0.75)
+             scale (if (comparator (dist-unit unit) (+ 5.0 within)) 1.0 0.75)
              [ax ay] (angle->analog angle scale)]
-         ;; (println [ax ay])
          (play-input [[[:analog ax ay] 1]])
          ;; (step)
          )))))
@@ -508,25 +542,27 @@
 (defn select-unit-in-cursor
   "When there are multiple units near the cursor, cycles to the given one."
   [unit]
-  (let [cursor-units (units-under-cursor)
-        current (selected-unit-index)
-        ;; by id, not exact copy
-        ;; TODO: should this be the default?
-        target (.indexOf (map get-id cursor-units) (get-id unit))
-        presses
-        (cond
-          (= target -1)      0
-          (> current target) (+ target current)
-          :else              (- target current))]
-    (play-input
-     (apply concat
-            (concat
-             (repeat presses (press :select 10)))))))
+  (when (not (nil? (selected-unit)))
+    (let [cursor-units (units-under-cursor)
+          current (selected-unit-index)
+          ;; by id, not exact copy
+          ;; TODO: should this be the default?
+          target (.indexOf (map get-id cursor-units) (get-id unit))
+          presses
+          (cond
+            (= target -1)      0
+            (> current target) (+ target current)
+            :else              (- target current))]
+      (play-input
+       (apply concat
+              (concat
+               (repeat presses (press :select 10))))))))
 
 (defn select-unit
   "Moves the cursor to and selects the given unit."
   [unit]
   (move-to unit)
+  (do-nothing 10)
   (select-unit-in-cursor unit))
 
 (defmacro doseq-indexed [index-sym [item-sym coll] & body]

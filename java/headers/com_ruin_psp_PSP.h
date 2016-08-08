@@ -7,6 +7,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef com_ruin_psp_PSP_numSkills
+#define com_ruin_psp_PSP_numSkills 549L
+#undef com_ruin_psp_PSP_skillOffset
+#define com_ruin_psp_PSP_skillOffset 17274840L
 /*
  * Class:     com_ruin_psp_PSP
  * Method:    greetSelf

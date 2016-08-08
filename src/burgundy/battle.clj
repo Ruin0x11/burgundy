@@ -87,44 +87,6 @@
               target nil))
   :on-success (add-task (attack-task result)))
 
-(defn run-battle-engine-old
-  []
-  (let [target (closest (active-unit) (enemy-units))]
-    (cond
-      (at-special-stage?)
-      (special-stage)
-
-      (stage-started?)
-      (start-stage)
-
-      (not (or (nil? target) (nil? (active-unit))))
-      (do
-        (when (> (dist (active-unit)) 10.0)
-          (cancel))
-
-        (cond
-          (too-close? (active-unit) target)
-          (do
-            (println " *** Running away")
-            (move-unit target 20.0 :away))
-
-          (in-range? (active-unit) target 3)
-          (do
-            (println " *** Attacking")
-            (attack target))
-          :else
-          (do
-            (println " *** Moving & Attacking")
-            (move-unit (closest (active-unit) (enemy-units)) 10.0)
-            (when (in-range? (active-unit) target 20)
-              (attack target))))
-        (when (not (stage-clear?))
-          (end-action))
-        (wait-until-active))
-
-      (stage-clear?)
-      (finish-stage))))
-
 (defn update-battle-engine []
   (cond
     (at-special-stage?)

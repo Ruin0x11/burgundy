@@ -59,6 +59,10 @@ public class SkillType {
         return name;
     }
 
+    public String getDesc() {
+        return desc;
+    }
+
     public byte getPower() {
         return power;
     }
@@ -84,6 +88,10 @@ public class SkillType {
     }
 
     public byte getSpType() {
+        return spType;
+    }
+
+    public short getSpCost() {
         return spType;
     }
 

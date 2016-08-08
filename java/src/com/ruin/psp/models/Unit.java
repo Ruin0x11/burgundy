@@ -129,7 +129,7 @@ public class Unit {
             bb.get(nameData);
 
             try {
-                this.name = new String(data, "SHIFT-JIS");
+                this.name = new String(nameData, "SHIFT-JIS");
             } catch (Exception e) {
                 e.printStackTrace();
             }

@@ -82,7 +82,7 @@
 (defn select-active
   "Try to select the active unit."
   []
-  (if (> (dist (active-unit)) selection-dist)
+  (if (> (dist-unit (active-unit)) selection-dist)
     ;; canceling also cancels previous moves, so only cancel if I haven't moved.
     (if (has-moved?)
       (move-to (active-unit))
@@ -94,7 +94,7 @@
 
   Only to be called at the move menu."
   [unit]
-  (if (> (dist unit) 1.0)
+  (if (> (dist-unit unit) 1.0)
     (if (can-move?)
       (do
         (play-input
@@ -201,6 +201,7 @@
   (select-active)
   (play-input
    (concat
+    (wait 10)
     (press :cross)
     (menu-key-seq (battle-unit-cursor) 3 :battle-unit)
     (press :cross)))
