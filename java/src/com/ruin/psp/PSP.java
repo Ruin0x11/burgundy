@@ -245,10 +245,13 @@ public class PSP {
         return Collections.unmodifiableList(itemUnits);
     }
 
+    private static final int numSkills = 549;
+    private static final int skillOffset = 0x010797D8;
+
     public void loadSkillTypes() {
         skillTypes.clear();
-        for(int i = 0; i < 549; i++) {
-            byte[] skillTypesRam = readRam(0x010797D8 + (i*128), 128);
+        for(int i = 0; i < numSkills; i++) {
+            byte[] skillTypesRam = readRam(skillOffset + (i*128), 128);
             SkillType skill = new SkillType(skillTypesRam);
             skillTypes.put(skill.getID(), skill);
         }

@@ -40,11 +40,13 @@ public class SkillType {
 
         this.power = bb.get(0x6B);
         this.shape = bb.get(0x72);
-        this.range = bb.get(0x74);
-        this.radius = bb.get(0x75);
-        this.limitUpper = bb.get(0x76);
-        this.limitLower = bb.get(0x77);
-        this.spType = bb.get(0x78);
+
+        this.range = bb.get(0x75);
+        this.radius = bb.get(0x76);
+        this.limitUpper = bb.get(0x77);
+        this.limitLower = bb.get(0x78);
+
+        this.spType = bb.get(0x79);
 
         this.manaCost = bb.getInt(0x00);
     }

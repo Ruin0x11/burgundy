@@ -165,15 +165,15 @@
              (map #(.getID %) (seq ~coll)))))
 
 (defn gen-type-kw-maps []
-  (gen-type-kw-map skill-type-ids (skill-types)))
+  (gen-type-kw-map skill-type-kws (skill-types)))
 
 (defmacro defn-unit
   "Define a function that either takes a unit argument, or takes no arguments and is applied to the active unit."
   [name args body]
   (let [other (rest args)]
-   `(defn ~name
-      ([~@other] (~name (active-unit) ~@other))
-      (~args ~body))))
+    `(defn ~name
+       ([~@other] (~name (active-unit) ~@other))
+       (~args ~body))))
 
 (defn play-input
   "Sends input commands.
@@ -223,6 +223,75 @@
 (defn-unit get-skills [unit]
   (.getSkills unit))
 
+
+(defn get-skill-type [skill-or-id]
+  (.getSkillType api
+                 (if (number? skill-or-id)
+                   skill-or-id
+                   (.getID skill-or-id))))
+
+(def skill-shapes
+  {0 :sphere
+   1 :column
+   2 :triangle})
+
+;; TODO: temporary
+(defn is-spherical? [skill-or-id]
+  (= (:sphere skill-shapes)
+     (.getShape (get-skill-type skill-or-id))))
+
+(defn get-skill-shape [skill-type]
+  (get (.getShape skill-type) skill-shapes))
+
+(defn get-skill-range [skill-type]
+  (.getRange skill-type))
+
+(defn get-skill-radius [skill-type]
+  (.getRadius skill-type))
+
+(defn get-skill-limit-upper [skill-type]
+  (.getLimitUpper skill-type))
+
+(defn get-skill-limit-lower [skill-type]
+  (.getLimitLower skill-type))
+
+(defn get-skill-info [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    {:shape  (get-skill-shape skill)
+     :range  (get-skill-range skill)
+     :radius (get-skill-radius skill)
+     :upper  (get-skill-limit-upper skill)
+     :lower  (get-skill-limit-lower skill)}))
+
+(defn skill-range-horizontal
+  "Given a skill, returns the maximum and minimum distance it can reach on the x-z plane."
+  [skill-or-id]
+  (let [{:keys shape range radius} (get-skill-info skill-or-id)]
+    (case shape
+      :sphere   [0 (+ range radius)]
+      :column   [(- range radius) (+ range radius)]
+      :triangle [0 range])))
+
+(defn skill-range-vertical
+  "Given a skill, returns the maximum and minimum distance it can reach on the x-y plane."
+  [skill-or-id]
+  (let [{:keys upper lower} (get-skill-info skill-or-id)]
+    [upper lower]))
+
+(defn-unit is-skill-in-range? [unit target skill-or-id]
+  (let [[x-min x-max] (skill-range-horizontal skill-or-id)
+        [y-min y-max] (skill-range-horizontal skill-or-id)
+        {:keys shape} (get-skill-info skill-or-id))]
+  (case shape
+    :sphere true
+    :column true
+    :triangle true))
+
+(defn within-area? [pos min-pos max-pos]
+  (every? true? (concat
+                 (map >= pos min-pos)
+                 (map <= pos max-pos))))
+
 (defn print-skill [skill]
   (println (.getID skill)
            (.getLevel skill)
@@ -232,9 +301,9 @@
   (> (Math/abs (vel-y unit)) 1.0))
 
 (defn-unit is-moving? [unit]
-   (or (> (Math/abs (vel-x unit 1.0)))
-       (> (Math/abs (vel-y unit 1.0)))
-       (> (Math/abs (vel-z unit 1.0)))))
+  (or (> (Math/abs (vel-x unit 1.0)))
+      (> (Math/abs (vel-y unit 1.0)))
+      (> (Math/abs (vel-z unit 1.0)))))
 
 (defn-unit get-name [unit]
   (.getName unit))
@@ -260,7 +329,7 @@
   (> (get-remaining-move (active-unit)) no-move-threshold))
 
 (defn-unit has-attacked? [unit]
-   (.hasAttacked unit))
+  (.hasAttacked unit))
 
 (defn-unit is-being-held? [unit]
   (.isBeingHeld unit))
@@ -281,7 +350,7 @@
   (+ unit-start-offset (* (get-id unit) unit-size)))
 
 (defn-unit unit-byte [unit n]
-   (nth (unit-memory unit) n))
+  (nth (unit-memory unit) n))
 
 (defn to-bits [i]
   (str "2r" (Integer/toBinaryString i)))
@@ -356,11 +425,11 @@
     (+ x y)))
 
 (defn-unit closest [unit coll]
-   (when (and unit (seq coll))
-     (apply min-key (partial dist unit) coll)))
+  (when (and unit (seq coll))
+    (apply min-key (partial dist unit) coll)))
 
 (defn-unit in-range? [unit target-unit range]
-   (<= (dist unit target-unit) range))
+  (<= (dist unit target-unit) range))
 
 (defn-unit units-nearby [unit range coll]
   (let [nearby? (fn [target-unit] (in-range? unit target-unit range))
@@ -376,7 +445,7 @@
     (set (remove is-being-held? nearby-items))))
 
 (defn-unit too-close? [unit target]
-   (< (dist unit target) 2.0))
+  (< (dist unit target) 2.0))
 
 (defn is-active?
   "Returns true if the cursor can be moved on the map.
