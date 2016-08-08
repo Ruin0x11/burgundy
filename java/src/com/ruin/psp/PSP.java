@@ -2,6 +2,7 @@ package com.ruin.psp;
 
 import com.ruin.psp.models.*;
 import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -244,6 +245,15 @@ public class PSP {
         return Collections.unmodifiableList(itemUnits);
     }
 
+    public void loadSkillTypes() {
+        skillTypes.clear();
+        for(int i = 0; i < 549; i++) {
+            byte[] skillTypesRam = readRam(0x010797D8 + (i*128), 128);
+            SkillType skill = new SkillType(skillTypesRam);
+            skillTypes.put(skill.getID(), skill);
+        }
+    }
+
     /**
      * Returns the units beneath the cursor, ordered from lowest to highest.
      * @return <doc>
@@ -255,9 +265,7 @@ public class PSP {
             // deal with little endian ordering of pairs of shorts
             int id = readRAMU16(0x0012F398 + i*0x02);
             cursorUnits.add(units.get(id));
-            System.out.println(id);
         }
-        System.out.println();
         return Collections.unmodifiableList(cursorUnits);
     }
 
@@ -268,6 +276,9 @@ public class PSP {
     public Unit getSelectedUnit() {
         List<Unit> cursorUnits = getUnitsUnderCursor();
         int index = getSelectedUnitIndex();
+        if(index >= cursorUnits.size()) {
+            return null;
+        }
         return cursorUnits.get(index);
     }
 
@@ -278,13 +289,19 @@ public class PSP {
     private ArrayList<Unit> itemUnits = new ArrayList<Unit>();
     private ArrayList<Unit> deadUnits = new ArrayList<Unit>();
 
+    private HashMap<Integer, SkillType> skillTypes = new HashMap<Integer, SkillType>();
+
+    public SkillType getSkillType(int skillID) { return skillTypes.get(skillID); }
+    public Collection<SkillType> getSkillTypes() { return skillTypes.values(); }
+
     private final int objectAddress = 0x01491090;
     // private final int objectAddress = 0x0144e440;
     private final int objectSize = 2136;
 
-    public static String getStringAt(ByteBuffer bb, int offset, int size) {
-        byte[] data = PSP.readRam(offset, size);
-        // split the 0-terminated string
+    /**
+     * Returns the 0-terminated string in the data.
+     */
+    public static String getStringAt(byte[] data) {
         int stringEnd = 0;
         for(int i = 0; i < data.length; i++) {
             if((data[i] & 0xFF) == 0) {
@@ -296,7 +313,7 @@ public class PSP {
 
         String str = "";
         try {
-            str = new String(data, "ASCII");
+            str = new String(data, "SHIFT-JIS");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -305,6 +322,7 @@ public class PSP {
 
 
     public void onUpdate() {
+        loadSkillTypes();
         units.clear();
         friendlyUnits.clear();
         enemyUnits.clear();

@@ -39,8 +39,9 @@
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
            ;; (list-units)
-           (snoop-range (unit-offset (active-unit)) 4 64)
-           (dump (active-unit))
+           
+           ;; (snoop-range 0x01546300 4 64)
+           ;; (snoop-range (unit-offset (active-unit)) 4 64)
            (if @run-ai?
              (run-battle-engine))
            (step))))
@@ -66,5 +67,6 @@
     (load-state "go")
     (step)
     (step)
+    (gen-type-kw-maps)
     (continue!)
     (shutdown!)))

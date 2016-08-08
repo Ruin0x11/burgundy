@@ -3,10 +3,12 @@ package com.ruin.psp.models;
 import java.nio.*;
 import java.io.*;
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import com.ruin.psp.PSP;
 
 public class Unit {
-
     private byte[] data;
 
     public static final int TEAM_FRIENDLY = 0;
@@ -14,6 +16,7 @@ public class Unit {
     public static final int TEAM_NEUTRAL = 2;
 
     private int id;
+    private int heldId;
 
     private float x;
     private float y;
@@ -52,6 +55,8 @@ public class Unit {
     // if a unit is confined (friendly), this points to the memory location of that unit's stats
     private int friendlyUnitOffset;
 
+    private ArrayList<Skill> skills;
+
     public Unit(byte[] data, int id) {
         ByteBuffer bb = ByteBuffer.wrap(data);
         bb.order(ByteOrder.LITTLE_ENDIAN);
@@ -86,9 +91,10 @@ public class Unit {
 
         this.isItem = bb.getShort(0x14a) == 1;
 
+        this.name = "";
+
         if(this.isFriendly()) {
             this.friendlyUnitOffset = bb.getInt(0x574) - 0x8800000;
-            this.name = "friendly";
             // 0x58c : pointer to held item's info
             // 0x594 : pointer to a skill
             // 0x10 : pointer to something
@@ -96,9 +102,24 @@ public class Unit {
 
             if(this.friendlyUnitOffset != 0) {
                 this.mana = PSP.readRAMU32(this.friendlyUnitOffset + 148);
+
+                byte[] nameData = PSP.readRam(this.friendlyUnitOffset + 16, 24);
+                this.name = PSP.getStringAt(nameData);
+
                 this.numSkills = PSP.readRAMU16(this.friendlyUnitOffset + 616);
 
-                this.name = PSP.getStringAt(bb, this.friendlyUnitOffset + 16, 24);
+                this.skills = new ArrayList<Skill>();
+                for(int i = 0; i < this.numSkills; i++) {
+                    int skillOffset = 0x100 + (0x8 * i);
+                    byte[] skillData = PSP.readRam(this.friendlyUnitOffset + skillOffset, 8);
+                    Skill skill = new Skill(skillData);
+                    skills.add(skill);
+                }
+            }
+
+            int itemOffset = bb.getInt(0x58c);
+            if(itemOffset != 0) {
+                // this.numSkills += PSP.readRAMU16(itemOffset + 616);
             }
         }
         else {
@@ -108,7 +129,7 @@ public class Unit {
             bb.get(nameData);
 
             try {
-                this.name = new String(nameData, "ASCII");
+                this.name = new String(data, "SHIFT-JIS");
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -243,11 +264,22 @@ public class Unit {
         return this.team == TEAM_NEUTRAL;
     }
 
+    public List<Skill> getSkills() {
+        return Collections.unmodifiableList(this.skills);
+    }
+
     public void dump() {
         try {
             FileOutputStream fos = new FileOutputStream("/home/prin/dump/" + this.name + ".dump");
             fos.write(this.data);
             fos.close();
+            if(this.friendlyUnitOffset != 0) {
+                byte[] detailData = PSP.readRam(this.friendlyUnitOffset, 704);
+
+                fos = new FileOutputStream("/home/prin/dump/" + this.name + "_detail.dump");
+                fos.write(detailData);
+                fos.close();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -165,7 +165,7 @@
 
   (play-input
    (concat
-    (menu-key-seq (battle-attack-cursor) 0 )
+    (menu-key-seq (battle-attack-cursor) 0 :battle-attack (count (get-skills (active-unit))))
     (press :cross)))
 
   (if (can-attack?)
@@ -179,8 +179,7 @@
     (do
       (cancel)
       (cancel)
-      (cancel)
-      (move-unit target 20 :away)))
+      (cancel)))
   )
 
 (defn end-action []
@@ -215,11 +214,11 @@
         (press :cross)
         (menu-key-seq (battle-confine-cursor) n :confine)
         (press :cross)
-        (cancel))))
+        (cancel)
+        (wait 10))))
     (do
       (cancel)
-      (cancel)
-      (move-unit target 20 :away))))
+      (cancel))))
 
 (defn special-stage []
   (println "At special stage.")

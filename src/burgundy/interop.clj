@@ -1,7 +1,9 @@
 (ns burgundy.interop
   (:require [burgundy.repl :refer :all]
             [burgundy.queue :refer :all]
-            [clojure.pprint :refer (cl-format)])
+            [clojure.pprint :refer (cl-format)]
+            [clojure.string :as string]
+            [wharf.core :refer :all])
   (:import com.ruin.psp.PSP)
   (:import java.io.File))
 
@@ -79,6 +81,10 @@
 
 (defn selected-unit [] (.getSelectedUnit api))
 
+(defn skill-types [] (.getSkillTypes api))
+
+(defn get-skill-type [id] (.getSkillType api id))
+
 (defn island-menu-cursor [] (PSP/getIslandMenuCursorPos))
 
 (defn status-menu-cursor [] (PSP/getStatusMenuCursorPos))
@@ -141,8 +147,33 @@
   [buttons]
   (reduce #(bit-or %1 (%2 button-masks)) 0x0000 buttons))
 
-(defn get-name [unit]
-  (.getName unit))
+(defn space->hyphen [s]
+  (string/join "-" (string/split s #" ")))
+
+(defn strip [coll chars]
+  (apply str (remove #((set chars) %) coll)))
+
+(defn strip-bad-chars [s]
+  (strip s "/@!'.,"))
+
+(defn camel->keyword []
+  (comp keyword string/lower-case space->hyphen strip-bad-chars))
+
+(defmacro gen-type-kw-map [inject-sym coll]
+  `(def ~inject-sym
+     (zipmap (map (comp (camel->keyword) #(.getName %)) (seq ~coll))
+             (map #(.getID %) (seq ~coll)))))
+
+(defn gen-type-kw-maps []
+  (gen-type-kw-map skill-type-ids (skill-types)))
+
+(defmacro defn-unit
+  "Define a function that either takes a unit argument, or takes no arguments and is applied to the active unit."
+  [name args body]
+  (let [other (rest args)]
+   `(defn ~name
+      ([~@other] (~name (active-unit) ~@other))
+      (~args ~body))))
 
 (defn play-input
   "Sends input commands.
@@ -171,80 +202,86 @@
 (defn print-flags []
   (PSP/printFlags))
 
-(defn pos-x [unit]
+(defn-unit pos-x [unit]
   (.getX unit))
 
-(defn pos-y [unit]
+(defn-unit pos-y [unit]
   (.getY unit))
 
-(defn pos-z [unit]
+(defn-unit pos-z [unit]
   (.getZ unit))
 
-(defn vel-x [unit]
+(defn-unit vel-x [unit]
   (.getVelX unit))
 
-(defn vel-y [unit]
+(defn-unit vel-y [unit]
   (.getVelY unit))
 
-(defn vel-z [unit]
+(defn-unit vel-z [unit]
   (.getVelZ unit))
 
-(defn num-skills [unit]
-  (.getNumSkills))
+(defn-unit get-skills [unit]
+  (.getSkills unit))
 
-(defn is-in-air?
-  ([] (is-in-air? (active-unit)))
-  ([unit] (> (Math/abs (vel-y unit)) 1.0)))
+(defn print-skill [skill]
+  (println (.getID skill)
+           (.getLevel skill)
+           (.getExp skill)))
 
-(defn is-moving?
-  ([] (is-moving? (active-unit)))
-  ([unit]
+(defn-unit is-in-air? [unit]
+  (> (Math/abs (vel-y unit)) 1.0))
+
+(defn-unit is-moving? [unit]
    (or (> (Math/abs (vel-x unit 1.0)))
-       (> (Math/abs (vel-x unit 1.0)))
-       (> (Math/abs (vel-x unit 1.0))))))
+       (> (Math/abs (vel-y unit 1.0)))
+       (> (Math/abs (vel-z unit 1.0)))))
 
-(defn get-id [unit]
+(defn-unit get-name [unit]
+  (.getName unit))
+
+(defn-unit get-id [unit]
   (.getID unit))
 
-(defn get-mana [unit]
+(defn-unit get-mana [unit]
   (.getMana unit))
 
-(defn get-max-move [unit]
+(defn-unit get-max-move [unit]
   (.getRemainingMove unit))
 
-(defn get-remaining-move [unit]
+(defn-unit get-remaining-move [unit]
   (.getRemainingMove unit))
 
 (defn has-moved? []
   (not= (get-max-move (active-unit)) (get-remaining-move (active-unit))))
 
+(def no-move-threshold 5.0)
+
 (defn has-move-remaining? []
-  (> (get-remaining-move (active-unit)) 0))
+  (> (get-remaining-move (active-unit)) no-move-threshold))
 
-(defn has-attacked?
-  ([] (has-attacked? (active-unit)))
-  ([unit]
-   (.hasAttacked unit)))
+(defn-unit has-attacked? [unit]
+   (.hasAttacked unit))
 
-(defn is-being-held? [unit]
+(defn-unit is-being-held? [unit]
   (.isBeingHeld unit))
 
-(defn dump [unit]
+(defn-unit is-friendly? [unit]
+  (.isFriendly unit))
+
+(defn-unit dump [unit]
   (.dump unit))
 
 (def unit-start-offset 0x01491090)
 (def unit-size 2136)
 
-(defn unit-memory [unit]
+(defn-unit unit-memory [unit]
   (seq (nth (contiguous-memory unit-start-offset unit-size 36) (get-id unit))))
 
-(defn unit-offset [unit]
+(defn-unit unit-offset [unit]
   (+ unit-start-offset (* (get-id unit) unit-size)))
 
-(defn unit-byte
-  ([n] (unit-byte (active-unit) n))
-  ([unit n]
-   (nth (unit-memory unit) n)))
+(defn-unit unit-byte [unit n]
+   (nth (unit-memory unit) n))
 
 (defn to-bits [i]
   (str "2r" (Integer/toBinaryString i)))
@@ -255,16 +292,14 @@
         z (PSP/getPlayerZ)]
     [x y z]))
 
-(defn get-pos [unit]
+(defn-unit get-pos [unit]
   (let [x (pos-x unit)
         y (pos-y unit)
         z (pos-z unit)]
     [x y z]))
 
-(defn is-marona?
-  ([] (is-marona? (active-unit)))
-  ([unit]
-   (= (get-name unit) "Marona")))
+(defn-unit is-marona? [unit]
+  (= (get-name unit) "Marona"))
 
 (defn dist
   ([a b]          (dist (pos-x a) (pos-z a)
@@ -320,18 +355,14 @@
         y (Math/sin rad)]
     (+ x y)))
 
-(defn closest
-  ([coll] (closest (active-unit) coll))
-  ([unit coll]
+(defn-unit closest [unit coll]
    (when (and unit (seq coll))
-     (apply min-key (partial dist unit) coll))))
+     (apply min-key (partial dist unit) coll)))
 
-(defn in-range?
-  ([target-unit range] (in-range? (active-unit) target-unit range))
-  ([unit target-unit range]
-   (<= (dist unit target-unit) range)))
+(defn-unit in-range? [unit target-unit range]
+   (<= (dist unit target-unit) range))
 
-(defn units-nearby [unit range coll]
+(defn-unit units-nearby [unit range coll]
   (let [nearby? (fn [target-unit] (in-range? unit target-unit range))
         nearby-units (remove #{unit} (filter nearby? coll))]
     (set nearby-units)))
@@ -344,10 +375,8 @@
   (let [nearby-items (units-nearby (active-unit) confine-radius (item-units))]
     (set (remove is-being-held? nearby-items))))
 
-(defn too-close?
-  ([target] (too-close? (active-unit) target))
-  ([unit target]
-   (< (dist unit target) 2.0)))
+(defn-unit too-close? [unit target]
+   (< (dist unit target) 2.0))
 
 (defn is-active?
   "Returns true if the cursor can be moved on the map.
@@ -420,8 +449,6 @@
           (= target -1)      0
           (> current target) (+ target current)
           :else              (- target current))]
-    (println (map get-name cursor-units))
-    (println (str current " " target " " presses))
     (play-input
      (apply concat
             (concat
