@@ -267,11 +267,11 @@
 
 (def skill-sp-ids
   {:physical 0
-   :power 1
-   :magic 2
-   :nature 3
-   :psi 4
-   :dark 5
+   :energy 1
+   :elemental 2
+   :natural 3
+   :spacetime 4
+   :alteration 5
    :healing 6})
 
 (def skill-sp-kws
@@ -300,7 +300,7 @@
   (let [skill (get-skill-type skill-or-id)]
     (.getName skill)))
 
-(defn skill-cost [skill-or-id]
+(defn skill-sp-cost [skill-or-id]
   (let [skill (get-skill-type skill-or-id)]
     (.getSpCost skill)))
 
@@ -319,7 +319,7 @@
           (get-skills (get-held-unit unit))))
 
 (defn-unit get-sp [unit]
-  (zipmap (vals skill-sp-kws) (.getSp unit)))
+  (do (println unit) (zipmap (vals skill-sp-kws) (.getSp unit))))
 
 (defn-unit get-max-sp [unit]
   (zipmap (vals skill-sp-kws) (.getMaxSp unit)))
@@ -327,14 +327,18 @@
 (defn-unit get-sp-affinity [unit]
   (zipmap (vals skill-sp-kws) (.getSpAffinity unit)))
 
-(defn-unit can-use-skill? [unit skill-or-id]
-  (let [skill (get-skill-type skill-or-id)
-        sp-type (skill-sp-type skill)
-        sp (sp-type (get-sp unit))]
-    (> sp (.getSpCost skill))))
+(defn can-use-skill?
+  "Given a map of sp values and a skill, determines if the skill can be used.
+  It takes SP instead of a unit because the skill owner might be an item, not the user."
+  [all-sp skill-or-id]
+  (do (let [sp-type (skill-sp-type skill-or-id)
+            sp (sp-type all-sp)]
+        (> sp (skill-sp-cost skill-or-id)))))
 
 (defn-unit usable-skills [unit]
-  (filter can-use-skill? (get-skills unit)))
+  (let [skills (get-all-skills unit)
+        sp     (get-sp unit)]
+    (filter (partial can-use-skill? sp) skills)))
 
 (defn has-moved? []
   (not= (get-max-move (active-unit)) (get-remaining-move (active-unit))))

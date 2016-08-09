@@ -323,9 +323,13 @@ public class PSP {
         return str;
     }
 
+    boolean typesLoaded = false;
 
     public void onUpdate() {
-        loadSkillTypes();
+        if (!typesLoaded) {
+            loadSkillTypes();
+            typesLoaded = true;
+        }
         units.clear();
         friendlyUnits.clear();
         enemyUnits.clear();
