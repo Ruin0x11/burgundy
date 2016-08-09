@@ -23,6 +23,11 @@
    15 :res
    16 :spd})
 
+(def skill-shapes
+  {0 :sphere
+   1 :column
+   2 :triangle})
+
 (defn get-skill-type [skill-or-id]
   (.getSkillType api
                  (if (number? skill-or-id)
@@ -32,6 +37,18 @@
 (defn skill-name [skill-or-id]
   (let [skill (get-skill-type skill-or-id)]
     (.getName skill)))
+
+(defn skill-id [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (.getID skill)))
+
+(defn skill-keyword [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (get skill-type-kws (.getID skill))))
+
+(defn skill-attack-type [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (get skill-attack-types (.getAttackType skill))))
 
 (defn skill-sp-cost [skill-or-id]
   (let [skill (get-skill-type skill-or-id)]
@@ -48,45 +65,64 @@
              (.getSpCost skill))))
 
 (defn can-use-skill?
-  "Given a map of sp values and a skill, determines if the skill can be used.
+  "Given a map of SP values and a skill, determines if the skill can be used.
   It takes SP instead of a unit because the skill owner might be an item, not the user."
   [all-sp skill-or-id]
   (do (let [sp-type (skill-sp-type skill-or-id)
             sp (sp-type all-sp)]
         (> sp (skill-sp-cost skill-or-id)))))
 
-(def skill-shapes
-  {0 :sphere
-   1 :column
-   2 :triangle})
+(defn get-skill-shape [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (get skill-shapes (.getShape skill))))
+
+(defn get-skill-radius [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (.getRadius skill)))
+
+(defn get-skill-range [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (.getRange skill)))
+
+(defn get-skill-lower [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (.getLimitLower skill)))
+
+(defn get-skill-upper [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (.getLimitUpper skill)))
+
+(defn get-skill-info [skill-or-id]
+  {:keyword (skill-keyword skill-or-id)
+   :attack-type (skill-attack-type skill-or-id)
+   :sp-cost (skill-sp-cost skill-or-id)
+   :sp-type (skill-sp-type skill-or-id)
+
+   :shape  (get-skill-shape skill-or-id)
+   :range  (get-skill-range skill-or-id)
+   :radius (get-skill-radius skill-or-id)
+   :upper  (get-skill-upper skill-or-id)
+   :lower  (get-skill-lower skill-or-id)})
 
 ;; TODO: temporary
 (defn is-spherical? [skill-or-id]
-  (= (:sphere skill-shapes)
-     (.getShape (get-skill-type skill-or-id))))
+  (= :sphere (get-skill-shape skill-or-id)))
 
-(defn get-skill-shape [skill-type]
-  (get skill-shapes (.getShape skill-type)))
+(defn is-attack? [skill-or-id]
+  (let [type (skill-attack-type skill-or-id)
+        kw (skill-keyword skill-or-id)]
+    (and (every? #(not= type %) [:recovery :support])
+         ;;TODO: detect this
+         (not= kw :return))))
 
-(defn get-skill-range [skill-type]
-  (.getRange skill-type))
+(defn is-heal? [skill-or-id]
+  (let [type (skill-attack-type skill-or-id)]
+    (= type :recovery)))
 
-(defn get-skill-radius [skill-type]
-  (.getRadius skill-type))
-
-(defn get-skill-limit-upper [skill-type]
-  (.getLimitUpper skill-type))
-
-(defn get-skill-limit-lower [skill-type]
-  (.getLimitLower skill-type))
-
-(defn get-skill-info [skill-or-id]
-  (let [skill (get-skill-type skill-or-id)]
-    {:shape  (get-skill-shape skill)
-     :range  (get-skill-range skill)
-     :radius (get-skill-radius skill)
-     :upper  (get-skill-limit-upper skill)
-     :lower  (get-skill-limit-lower skill)}))
+(defn is-single-target? [skill-or-id]
+  (let [{:keys [shape radius]} (get-skill-info skill-or-id)]
+    (and (= shape :column)
+         (= radius 0))))
 
 (defn skill-range-horizontal
   "Given a skill, returns the maximum and minimum distance it can reach on the x-z plane."

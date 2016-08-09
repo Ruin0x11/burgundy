@@ -153,6 +153,8 @@ public class Unit {
             int itemOffset = bb.getInt(0x57c);
             if(itemOffset != 0) {
                 this.heldItemID = PSP.readRAMU16((itemOffset - 0x8800000) + 0x842);
+            } else {
+                this.heldItemID = -1;
             }
         }
         else {

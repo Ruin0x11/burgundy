@@ -157,11 +157,17 @@
 
 (defmacro gen-type-kw-map [inject-sym coll]
   `(def ~inject-sym
-     (zipmap (map (comp (camel->keyword) #(.getName %)) (seq ~coll))
-             (map #(.getID %) (seq ~coll)))))
+     (zipmap
+      (map #(.getID %) (seq ~coll))
+      (map (comp (camel->keyword) #(.getName %)) (seq ~coll)))))
+
+(defmacro gen-type-id-map [inject-sym coll]
+  `(def ~inject-sym
+     (clojure.set/map-invert ~coll)))
 
 (defn gen-type-kw-maps []
-  (gen-type-kw-map skill-type-kws (skill-types)))
+  (gen-type-kw-map skill-type-kws (skill-types))
+  (gen-type-id-map skill-type-ids skill-type-kws))
 
 (defn play-input
   "Sends input commands.

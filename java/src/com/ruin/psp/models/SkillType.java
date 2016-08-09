@@ -53,6 +53,9 @@ public class SkillType {
         this.limitLower = bb.get(0x78);
 
         this.manaCost = bb.getInt(0x00);
+
+        // if 0x5 = 1 or 2, passive skill?
+        // or 0x74 = 050C?
     }
 
     public int getID() {

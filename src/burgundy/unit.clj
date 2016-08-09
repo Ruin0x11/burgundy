@@ -50,7 +50,10 @@
 (defn-unit get-remaining-move [unit] (.getRemainingMove unit))
 
 (defn-unit get-held-unit [unit]
-  (get-unit (.getHeldItemID unit)))
+  (let [id (.getHeldItemID unit)]
+    (if (= -1 id) nil
+        (get-unit id))))
+
 (defn has-moved? []
   (not= (get-max-move (active-unit)) (get-remaining-move (active-unit))))
 
@@ -61,6 +64,7 @@
 
 (defn-unit has-attacked? [unit] (.hasAttacked unit))
 
+(defn-unit is-holding? [unit] (not (nil? (get-held-unit unit))))
 (defn-unit is-being-held? [unit] (.isBeingHeld unit))
 
 (defn-unit is-friendly? [unit] (.isFriendly unit))
@@ -89,7 +93,13 @@
 
 (defn-unit get-all-skills [unit]
   (concat (get-skills unit)
-          (get-skills (get-held-unit unit))))
+          (when (is-holding? unit)
+            (get-skills (get-held-unit unit)))))
+
+(defn-unit get-skill-pos [unit skill]
+  (let [skills (map skill-id (get-all-skills unit))
+        id (skill-id skill)]
+    (.indexOf skills id)))
 
 (defn-unit get-sp [unit]
   (do (zipmap (vals skill-sp-kws) (.getSp unit))))
@@ -111,20 +121,37 @@
         {:keys [shape range]} (get-skill-info skill-or-id)
         my-pos (get-pos unit)
         target-pos (get-pos target)]
-    (println my-pos target-pos shape range vert-range x-min x-max)
+    (println (get-name unit) my-pos target-pos shape range vert-range x-min x-max)
     (case shape
-      :sphere (within-cylinder? target-pos my-pos (+ x-max (get-remaining-move)) vert-range)
+      :sphere (within-cylinder? target-pos my-pos (+ x-max (get-remaining-move unit)) vert-range)
       :column false
       :triangle false)))
 
 (defn-unit in-range? [unit target]
   (some (filter (partial skill-in-range? unit target) (get-skills))))
 
+(defn-unit should-use-skill? [unit skill]
+  (and (or (is-spherical? skill)
+           (is-single-target? skill))
+       (is-attack? skill)))
+
 (defn-unit usable-skills [unit]
   (let [skills (get-all-skills unit)
         sp     (get-sp unit)]
-    (filter (partial can-use-skill? sp) skills)))
+    (println (count skills))
+    (filter (every-pred
+             (partial can-use-skill? sp)
+             (partial should-use-skill? unit))
+            skills)))
 
+(defn-unit skills-reaching [unit target]
+  (let [skills (usable-skills unit)]
+    (filter (partial skill-in-range? unit target) skills)))
+
+(defn select-skill-pos [target]
+  (let [unit (active-unit)]
+    (get-skill-pos
+     (first (skills-reaching target)))))
 
 (defn dist-unit
   ([a b]          (dist (pos-x a) (pos-z a)
