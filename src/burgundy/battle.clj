@@ -1,5 +1,6 @@
 (ns burgundy.battle
   (:require [burgundy.interop :refer :all]
+            [burgundy.unit :refer :all]
             [burgundy.menu :refer :all]
             [burgundy.task :refer :all]
             [burgundy.queue :refer :all]

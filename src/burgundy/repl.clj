@@ -10,7 +10,7 @@
   (with-open [conn (repl/connect :port port)]
     (-> (repl/client conn 1000)
         ;; load namespaces automatically, to save retyping them
-        (repl/message {:op :eval :code "(use '(burgundy interop battle menu queue core))"})
+        (repl/message {:op :eval :code "(use '(burgundy interop battle menu queue core unit skill))"})
         doall
         clojure.pprint/pprint)))
 

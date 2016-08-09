@@ -1,6 +1,6 @@
 (ns burgundy.menu
-  (:require [burgundy.interop :refer :all])
-  )
+  (:require [burgundy.interop :refer :all]
+            [burgundy.unit :refer :all]))
 
 (def menu-scroll-amounts
   {:attack 8
