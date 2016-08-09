@@ -3,6 +3,7 @@
             [burgundy.queue :refer :all]
             [clojure.pprint :refer (cl-format)]
             [clojure.string :as string]
+            [clojure.data :refer [diff]]
             [wharf.core :refer :all])
   (:import com.ruin.psp.PSP)
   (:import java.io.File))
@@ -63,6 +64,10 @@
   (let [save (get-save-name name)]
     (PSP/saveSaveState (.getCanonicalPath save))))
 
+(defmacro doseq-indexed [index-sym [item-sym coll] & body]
+  `(doseq [[~index-sym ~item-sym] (map list (range) ~coll)]
+     ~@body))
+
 ;; phantom brave
 
 (defn units [] (.getUnits api))
@@ -73,7 +78,7 @@
 
 (defn item-units [] (.getItemUnits api))
 
-(defn get-unit [id] (.getUnit api))
+(defn get-unit [id] (.getUnit api id))
 
 (defn active-unit [] (.getActiveUnit api))
 
@@ -234,29 +239,6 @@
         z (PSP/getPlayerZ)]
     [x y z]))
 
-(defn-unit get-skills [unit]
-  (.getSkills unit))
-
-(defn get-skill-type [skill-or-id]
-  (.getSkillType api
-                 (if (number? skill-or-id)
-                   skill-or-id
-                   (.getID skill-or-id))))
-
-(defn skill-name [skill-or-id]
-  (let [skill (get-skill-type skill-or-id)]
-    (.getName skill)))
-
-(defn skill-cost [skill-or-id]
-  (let [skill (get-skill-type skill-or-id)]
-    (.getSpCost skill)))
-
-(defn print-skill [skill-or-id]
-  (let [skill (get-skill-type skill-or-id)]
-    (println (.getName skill)
-             (.getDesc skill)
-             (.getSpCost skill))))
-
 (defn-unit is-in-air? [unit]
   (> (Math/abs (vel-y unit)) 1.0))
 
@@ -279,6 +261,80 @@
 
 (defn-unit get-remaining-move [unit]
   (.getRemainingMove unit))
+
+(defn-unit get-held-unit [unit]
+  (get-unit (.getHeldItemID unit)))
+
+(def skill-sp-ids
+  {:physical 0
+   :power 1
+   :magic 2
+   :nature 3
+   :psi 4
+   :dark 5
+   :healing 6})
+
+(def skill-sp-kws
+  (clojure.set/map-invert skill-sp-ids))
+
+(def skill-attack-types
+  {4 :recovery
+   5 :support
+   7 :combo
+   12 :atk
+   13 :def
+   14 :int
+   15 :res
+   16 :spd})
+
+(defn-unit get-skills [unit]
+  (.getSkills unit))
+
+(defn get-skill-type [skill-or-id]
+  (.getSkillType api
+                 (if (number? skill-or-id)
+                   skill-or-id
+                   (.getID skill-or-id))))
+
+(defn skill-name [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (.getName skill)))
+
+(defn skill-cost [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (.getSpCost skill)))
+
+(defn skill-sp-type [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (get skill-sp-kws (.getSpType skill))))
+
+(defn print-skill [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (println (.getName skill)
+             (.getDesc skill)
+             (.getSpCost skill))))
+
+(defn-unit get-all-skills [unit]
+  (concat (get-skills unit)
+          (get-skills (get-held-unit unit))))
+
+(defn-unit get-sp [unit]
+  (zipmap (vals skill-sp-kws) (.getSp unit)))
+
+(defn-unit get-max-sp [unit]
+  (zipmap (vals skill-sp-kws) (.getMaxSp unit)))
+
+(defn-unit get-sp-affinity [unit]
+  (zipmap (vals skill-sp-kws) (.getSpAffinity unit)))
+
+(defn-unit can-use-skill? [unit skill-or-id]
+  (let [skill (get-skill-type skill-or-id)
+        sp-type (skill-sp-type skill)
+        sp (sp-type (get-sp unit))]
+    (> sp (.getSpCost skill))))
+
+(defn-unit usable-skills [unit]
+  (filter can-use-skill? (get-skills unit)))
 
 (defn has-moved? []
   (not= (get-max-move (active-unit)) (get-remaining-move (active-unit))))
@@ -314,6 +370,23 @@
 
 (defn-unit unit-byte [unit n]
   (nth (unit-memory unit) n))
+
+(defn diff-memory
+  "Given two pieces of data, returns an array with nil values where the same data was found in the array."
+  [a b]
+  (map (fn [i j]
+         (if (and (not= i j) i j)
+           j
+           nil))
+       a b))
+
+(defn diff-all [seq]
+  (reduce diff-memory seq))
+
+(defn print-diff [d]
+  (doseq-indexed i [b d]
+                 (when-not (nil? b)
+                   (printf "0x%04X: %02X \n" i b))))
 
 (defn to-bits [i]
   (str "2r" (Integer/toBinaryString i)))
@@ -385,7 +458,9 @@
     (and (<= min-y y max-y)
          (<= (dist x z cx cz) radius))))
 
-(defn-unit is-skill-in-range?
+(defn skill-in-range?
+  "Given a skill and unit, returns true if the skill's range and the unit's remaining move
+  can '"
   [unit target skill-or-id]
   (let [[x-min x-max] (skill-range-horizontal skill-or-id)
         [y-min y-max] (skill-range-vertical skill-or-id)
@@ -399,6 +474,9 @@
       :sphere (within-cylinder? target-pos my-pos (+ x-max (get-remaining-move)) vert-range)
       :column false
       :triangle false)))
+
+(defn-unit in-range? [unit target]
+  (some (filter (partial skill-in-range? unit target) (get-skills))))
 
 (defn dist-unit
   ([a b]          (dist (pos-x a) (pos-z a)
@@ -464,12 +542,16 @@
   (when (and unit (seq coll))
     (apply min-key (partial dist-unit unit) coll)))
 
-(defn-unit in-range? [unit target-unit range]
-  (<= (dist-unit unit target-unit) range))
+(defn-unit nearby? [unit target-unit max-x max-y]
+  (let [target-pos (get-pos target-unit)
+        my-pos (get-pos unit)]
+    (within-cylinder? target-pos my-pos
+                      [max-x (- max-x)]
+                      [max-y (- max-y)])))
 
-(defn-unit units-nearby [unit range coll]
-  (let [nearby? (fn [target-unit] (in-range? unit target-unit range))
-        nearby-units (remove #{unit} (filter nearby? coll))]
+(defn-unit units-nearby [unit range-x range-y coll]
+  (let [comparator (fn [target-unit] (nearby? unit target-unit range-x range-y))
+        nearby-units (remove #{unit} (filter comparator coll))]
     (set nearby-units)))
 
 (def confine-radius 70)
@@ -511,8 +593,8 @@
   "Checks if the result screen after clearing a stage is currently active."
   [] (PSP/isStageClear))
 
-(defn at-special-stage?
-  "Checks if the special map screen is active."
+(defn at-intrusion-stage?
+  "Checks if the intrusion map screen is active."
   [] (PSP/isSpecialStageScreenUp))
 
 (defn dead? [unit]
@@ -542,7 +624,7 @@
 (defn select-unit-in-cursor
   "When there are multiple units near the cursor, cycles to the given one."
   [unit]
-  (when (not (nil? (selected-unit)))
+  (when (selected-unit)
     (let [cursor-units (units-under-cursor)
           current (selected-unit-index)
           ;; by id, not exact copy
@@ -562,9 +644,5 @@
   "Moves the cursor to and selects the given unit."
   [unit]
   (move-to unit)
-  (do-nothing 10)
+  (do-nothing menu-delay)
   (select-unit-in-cursor unit))
-
-(defmacro doseq-indexed [index-sym [item-sym coll] & body]
-  `(doseq [[~index-sym ~item-sym] (map list (range) ~coll)]
-     ~@body))

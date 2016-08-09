@@ -5,6 +5,8 @@
             [burgundy.queue :refer :all]
             [clojure.set :refer [intersection]]))
 
+(def battle-state (ref {:summoned-units 0} ))
+
 (def-task end-action-task []
   :desc ["Ending action."]
   :priority 9999
@@ -13,17 +15,20 @@
   ;;TODO: detect if changing units
   :action (end-action))
 
-(def-task special-stage-task []
-  :desc ["Confirming special stage screen."]
+(def-task intrusion-stage-task []
+  :desc ["Confirming intrusion stage screen."]
   :priority 0
   :goal-state (stage-started?)
-  :action (special-stage))
+  :action (intrusion-stage))
 
 (def-task start-stage-task []
   :desc ["Starting stage."]
   :priority 1
   :goal-state (not (stage-started?))
-  :action (start-stage))
+  :action (do (start-stage)
+              (dosync
+               (commute battle-state assoc-in [:summoned-units] (summoned-units))
+               (commute battle-state assoc-in [:enemy-units] (count (enemy-units))))))
 
 (def-task finish-stage-task []
   :desc ["Finishing stage."]
@@ -35,9 +40,10 @@
   :desc ["Confine unit " id " to " (get-name target)]
   :priority 10
   :max-attempts 3
-  :goal-state (and (not (nil? (selected-unit)))
-                   (is-friendly? (selected-unit)))
-  :action (confine-unit target id))
+  :goal-state (> (summoned-units) (:summoned-units @battle-state))
+  :action (confine-unit target id)
+  :on-success (dosync
+               (commute battle-state assoc-in [:summoned-units] (summoned-units))))
 
 (def-task confine-closest-task [id]
   :desc ["Confinining unit " id " to a nearby item."]
@@ -46,8 +52,6 @@
   :goal-state (not (nil? result))
   :action (let [targets (confine-targets)
                 selected (closest targets)]
-            (println (map get-name (confine-targets)))
-            (println "Selected: " (get-name selected) )
             selected)
   :on-success (add-task (confine-task 0 result))
   )
@@ -89,8 +93,8 @@
 
 (defn update-battle-engine []
   (cond
-    (at-special-stage?)
-    (add-task (special-stage-task))
+    (at-intrusion-stage?)
+    (add-task (intrusion-stage-task))
 
     (stage-started?)
     (add-task (start-stage-task))
@@ -111,12 +115,12 @@
 (defn run-battle-engine []
   (if (empty? @battle-tasks)
     (update-battle-engine)
-    (while (not (empty? @battle-tasks))
+    (when (not (empty? @battle-tasks))
       (let [task (first (dequeue! battle-tasks))]
         (try
           (run-task task)
           (catch Exception e
             (println "Exception in battle engine!")
-            (println (active-unit))
             (.printStackTrace e))))
-      (list-tasks))))
+      (list-tasks)
+      (recur))))

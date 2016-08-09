@@ -337,7 +337,7 @@ public class PSP {
 
             // the unit exists if one of the two bytes at 0x844 are not 0
             if((unitRam[0x844] & 0xFF) != 0x0 || (unitRam[0x845] & 0xFF) != 0x0) {
-                Unit unit = new Unit(unitRam, i);
+                Unit unit = new Unit(unitRam);
                 units.put(unit.getID(), unit);
                 if(unit.getCurrentHp() == 0) {
                     deadUnits.add(unit);

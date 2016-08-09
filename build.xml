@@ -1,11 +1,11 @@
 <project name="psp" default="dist" basedir="."> 
 
-  <property name="build" value="build"/>
-  <property name="src" value="src"/>
-  <property name="dist" value="dist"/>
-  <property name="headers"  value="headers"/>
-  <property name="artifacts" value="../artifacts"/>
-  <property name="lib"  value="lib"/>
+    <property name="build" value="java/build"/>
+    <property name="src" value="java/src"/>
+    <property name="dist" value="java/dist"/>
+    <property name="headers"  value="java/headers"/>
+  <property name="artifacts" value="artifacts"/>
+  <property name="lib"  value="java/lib"/>
 
   <path id="classpath">
   </path>

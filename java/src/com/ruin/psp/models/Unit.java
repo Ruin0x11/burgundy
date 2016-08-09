@@ -15,8 +15,21 @@ public class Unit {
     public static final int TEAM_ENEMY = 1;
     public static final int TEAM_NEUTRAL = 2;
 
+    public enum SpTypes {
+        PHYSICAL,
+        ENERGY,
+        ELEMENTAL,
+        NATURAL,
+        SPACETIME,
+        ALTERATION,
+        HEALING;
+        public int getID() {
+            return ordinal();
+        }
+    }
+
     private int id;
-    private int heldId;
+    private int heldItemID;
 
     private float x;
     private float y;
@@ -43,6 +56,10 @@ public class Unit {
 
     private int mana;
 
+    private short[] sp;
+    private short[] spMax;
+    private short[] spAffinity;
+
     private boolean isItem;
     private boolean isBeingHeld;
     private int team;
@@ -52,18 +69,18 @@ public class Unit {
     private int remove;
     private boolean hasAttacked;
 
-    // if a unit is confined (friendly), this points to the memory location of that unit's stats
+    // if a unit is friendly, this points to the memory location of that unit's stats
     private int friendlyUnitOffset;
 
     private ArrayList<Skill> skills;
 
-    public Unit(byte[] data, int id) {
+    public Unit(byte[] data) {
         ByteBuffer bb = ByteBuffer.wrap(data);
         bb.order(ByteOrder.LITTLE_ENDIAN);
 
         this.data = data;
 
-        this.id = id;
+        this.id = bb.getShort(0x842);
 
         this.x = bb.getFloat(0x64);
         this.y = bb.getFloat(0x68);
@@ -95,10 +112,7 @@ public class Unit {
 
         if(this.isFriendly()) {
             this.friendlyUnitOffset = bb.getInt(0x574) - 0x8800000;
-            // 0x58c : pointer to held item's info
-            // 0x594 : pointer to a skill
-            // 0x10 : pointer to something
-            // 0x1d8 : pointer to something
+            // 0x57c : pointer to held item's info
 
             if(this.friendlyUnitOffset != 0) {
                 this.mana = PSP.readRAMU32(this.friendlyUnitOffset + 148);
@@ -115,11 +129,30 @@ public class Unit {
                     Skill skill = new Skill(skillData);
                     skills.add(skill);
                 }
+
             }
 
-            int itemOffset = bb.getInt(0x58c);
+            int spOffset = this.friendlyUnitOffset + 0x1f7;
+            this.sp = new short[7];
+            this.spMax = new short[7];
+            this.spAffinity = new short[7];
+            for(int i = 0; i < 7; i++) {
+                int offset = spOffset + (0xC * i);
+                byte[] spRam = PSP.readRam(offset, 0xC);
+                ByteBuffer spBuffer = ByteBuffer.wrap(spRam);
+                bb.order(ByteOrder.LITTLE_ENDIAN);
+
+                short spDat = spBuffer.getShort(0x0);
+                short spMaxDat = spBuffer.getShort(0x2);
+                short spAffinityDat = spBuffer.getShort(0x4);
+                this.sp[i] = spDat;
+                this.spMax[i] = spMaxDat;
+                this.spAffinity[i] = spAffinityDat;
+            }
+
+            int itemOffset = bb.getInt(0x57c);
             if(itemOffset != 0) {
-                // this.numSkills += PSP.readRAMU16(itemOffset + 616);
+                this.heldItemID = PSP.readRAMU16((itemOffset - 0x8800000) + 0x842);
             }
         }
         else {
@@ -236,8 +269,24 @@ public class Unit {
         return mana;
     }
 
+    public short[] getSp() {
+        return sp;
+    }
+
+    public short[] getMaxSp() {
+        return spMax;
+    }
+
+    public short[] getSpAffinity() {
+        return spAffinity;
+    }
+
     public int getNumSkills() {
         return numSkills;
+    }
+
+    public int getHeldItemID() {
+        return heldItemID;
     }
 
     public boolean isItem() {

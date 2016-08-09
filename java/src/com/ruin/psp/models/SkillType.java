@@ -9,6 +9,8 @@ public class SkillType {
     // 256 bytes
     // starting offset: 0x010797D4
 
+    byte[] data;
+
     private short id;
     private short spCost;
 
@@ -20,14 +22,17 @@ public class SkillType {
     private byte radius;
     private byte limitUpper;
     private byte limitLower;
-    private byte spType;
     private byte shape;
-    
+    private byte spType;
+    private byte attackType;
+
     private int manaCost;
 
     public SkillType(byte[] data) {
         ByteBuffer bb = ByteBuffer.wrap(data);
         bb.order(ByteOrder.LITTLE_ENDIAN);
+
+        this.data = data;
 
         this.id = bb.getShort(0x04);
         this.spCost = bb.getShort(0x08);
@@ -39,14 +44,13 @@ public class SkillType {
         this.desc = PSP.getStringAt(stringData);
 
         this.power = bb.get(0x6B);
+        this.spType = bb.get(0x70);
         this.shape = bb.get(0x72);
-
+        this.attackType = bb.get(0x74);
         this.range = bb.get(0x75);
         this.radius = bb.get(0x76);
         this.limitUpper = bb.get(0x77);
         this.limitLower = bb.get(0x78);
-
-        this.spType = bb.get(0x79);
 
         this.manaCost = bb.getInt(0x00);
     }
@@ -65,6 +69,14 @@ public class SkillType {
 
     public byte getPower() {
         return power;
+    }
+
+    public byte getSpType() {
+        return spType;
+    }
+
+    public byte getAttackType() {
+        return attackType;
     }
 
     public byte getShape() {
@@ -87,16 +99,22 @@ public class SkillType {
         return limitLower;
     }
 
-    public byte getSpType() {
-        return spType;
-    }
-
     public short getSpCost() {
-        return spType;
+        return spCost;
     }
 
     public int getManaCost() {
         return manaCost;
+    }
+
+    public void dump() {
+        try {
+            FileOutputStream fos = new FileOutputStream("/home/prin/dump/" + this.name + ".dump");
+            fos.write(this.data);
+            fos.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public String toString() {

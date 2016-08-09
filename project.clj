@@ -18,6 +18,4 @@
                  ;; defaults to something like (fn [ns] (str *ns* "=> "))
                  :prompt (fn [ns] (str "your command for <" ns ">, master? " ))
                  ;; What to print when the repl session starts.
-                 :welcome (println "Welcome to the magical world of the repl!")
-                 :
-                 })
+                 :welcome (println "Welcome to the magical world of the repl!")})

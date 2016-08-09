@@ -35,8 +35,6 @@
     (- pos 1)
     pos))
 
-(clojure.pprint/pprint (map #(mod (- % 0) 6) (range 0 6)))
-
 (defn get-menu-buttons [start end size diff]
   (if (< (mod diff size) (/ size 2))
     (if (> start end)
@@ -44,7 +42,7 @@
       [:down :rtrigger]
       )
     (if (> start end)
-[:down :ltrigger]
+      [:down :ltrigger]
       [:up   :rtrigger]
       )))
 
@@ -66,16 +64,19 @@
 
 
 (defn wait-until-active
-  []
-  (println "---Waiting.---")
-  (while (not (can-enter-input?))
-    (step))
-  (println "===Active.===")
-  (do-nothing 10)
-  )
+  ([]
+   (println "---Waiting.---")
+   (wait-until-active 0))
+  ([elapsed-frames]
+   (if-not (can-enter-input?)
+     (do
+       (step)
+       (recur (+ elapsed-frames 1)))
+     (do
+       (step)
+       (println "===Active.===")))))
 
 (defn cancel []
-  (println "cancel")
   (play-input
    (press :circle)))
 
@@ -111,7 +112,6 @@
       )))
 
 (defn move-unit [target dist & [dir]]
-  (println "Moving.")
   (let [angle 90
         [ax ay] (angle->analog angle 1.0)]
     (select-active)
@@ -129,12 +129,10 @@
          (press :cross 20))
         (wait-until-active))
       ;; TODO: fix.
-      (look-for-walkable (active-unit)))
-    (println "Moving ended.")))
+      (look-for-walkable (active-unit)))))
 
 (defn move-unit-quick
   [unit target dist & [dir]]
-  (println "Moving quickly.")
   (move-to target dist dir)
 
   (play-input
@@ -148,9 +146,7 @@
       (play-input
        (press :cross 20))
       (wait-until-active))
-    (look-for-walkable (active-unit)))
-  (println "Moving ended.")
-  )
+    (look-for-walkable (active-unit))))
 
 (defn attack [target]
   (println "Take this.")
@@ -165,7 +161,8 @@
 
   (play-input
    (concat
-    (menu-key-seq (battle-attack-cursor) 0 :battle-attack (count (get-skills (active-unit))))
+    (menu-key-seq (battle-attack-cursor) 0 :battle-attack
+                  (count (get-all-skills)))
     (press :cross)))
 
   (if (can-attack?)
@@ -173,17 +170,14 @@
       (play-input
        (press :cross))
       (wait-until-active)
-      (if (not (has-attacked?))
-        (recur target)
-        (println "Attack ended.")))
+      (when-not (has-attacked?)
+        (recur target)))
     (do
       (cancel)
       (cancel)
-      (cancel)))
-  )
+      (cancel))))
 
 (defn end-action []
-  (println "Ending action.")
   (select-active)
   (play-input
    (concat
@@ -192,12 +186,10 @@
     (menu-key-seq (battle-unit-cursor) 5 :battle-unit)
     (press :cross 20)
     (wait 20)))
-  (println "Action ended.")
   (wait-until-active)
   )
 
 (defn confine-unit [target n]
-  (println "Confining.")
   (select-active)
   (play-input
    (concat
@@ -221,18 +213,15 @@
       (cancel)
       (cancel))))
 
-(defn special-stage []
-  (println "At special stage.")
+(defn intrusion-stage []
   (play-input
    (concat
     (press :cross 20))))
 
 (defn start-stage []
-  (println "Stage started.")
   (wait-until-active))
 
 (defn finish-stage []
-  (println "Finished stage.")
   (play-input
    (concat
     ;; skip bol increment

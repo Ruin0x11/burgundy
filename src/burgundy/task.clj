@@ -47,24 +47,24 @@
          result (action)]
      (cond
        (goal-state result)            (do
-                                        (println (str name ": goal-state reached"))
-                                        (when (not (nil? on-success))
+                                        (println (str "SUCCESS:  " name))
+                                        (when on-success
                                           (on-success result)))
-       (and (not (nil? max-attempts))
+       (and max-attempts
             (= attempts max-attempts)) (do
-                                        (println "Task failed!")
-                                        (when (not (nil? on-failure))
+                                        (println (str "FAILURE:  " name))
+                                        (when on-failure
                                           (on-failure result)))
 
        :else                          (do
-                                        (println (str name ": goal-state not reached"))
+                                        (println (str "Retrying: " name))
                                         (recur task (+ 1 attempts))) ))))
 
 (defn list-tasks
   ([] (list-tasks battle-tasks))
   ([queue]
    (println)
-   (println "Tasks")
+   (println "===== Tasks =====")
    (if (empty? @queue)
      (println "No tasks running.")
      (do
@@ -72,4 +72,6 @@
        (doseq-indexed i [task (rest @queue)]
                       (println i ": " (:name (first task)) "----" (:desc (first task))))))
 
+
+   (println "=================")
    (println)))
