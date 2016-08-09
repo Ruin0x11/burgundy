@@ -64,7 +64,7 @@
   :goal-state (not (nil? result))
   :action (let [confinable (confine-targets)
                 confinable-near-target (intersection confinable
-                                                     (units-nearby target confine-radius (item-units)))
+                                                     (confine-targets target))
                 selected (closest target confinable-near-target)]
             (println "Selected " (get-name selected))
             selected)

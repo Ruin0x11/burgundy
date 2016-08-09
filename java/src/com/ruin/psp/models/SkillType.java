@@ -58,15 +58,15 @@ public class SkillType {
         // there are some special characters that need to be stripped
         this.desc = PSP.getStringAt(stringData);
 
-        this.power = bb.get(0x63);
-        this.spType = bb.get(0x68);
+        this.power = bb.get(0x6B);
+        this.spType = bb.get(0x6C);
         // this.baseSkill = bb.get(0x69) == 1;
-        this.shape = bb.get(0x6A);
-        this.attackType = bb.get(0x6C);
-        this.range = bb.get(0x6D);
-        this.radius = bb.get(0x6E);
-        this.limitUpper = bb.get(0x6F);
-        this.limitLower = bb.get(0x70);
+        this.shape = bb.get(0x6F);
+        this.attackType = bb.get(0x70);
+        this.range = bb.get(0x71);
+        this.radius = bb.get(0x72);
+        this.limitUpper = bb.get(0x73);
+        this.limitLower = bb.get(0x74);
         System.out.printf("%16s %s\n", bb.get(0x7a), this.name);
 
         this.manaCost = bb.getInt(0x00);

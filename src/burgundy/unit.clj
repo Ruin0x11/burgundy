@@ -97,9 +97,7 @@
         actives (remove passive-skill? skills)]
     (as-> actives s
       (if (is-being-held? unit) s (remove combo-skill? s))
-      (if (is-holding? unit) (remove unarmed-skill? s) (remove armed-skill? s))
-
-      )))
+      (if (is-holding? unit) (remove unarmed-skill? s) (remove armed-skill? s)))))
 
 (defn-unit get-all-skills [unit]
   (concat (get-usable-skills unit)
@@ -125,13 +123,12 @@
   can reach the target."
   [unit target skill-or-id]
   (let [[x-min x-max] (skill-range-horizontal skill-or-id)
-        [y-min y-max] (skill-range-vertical skill-or-id)
-        vert-range [(- (pos-y unit) y-min)
-                    (+ (pos-y unit) y-max)]
+        vert-range (skill-range-vertical skill-or-id)
         {:keys [shape range]} (get-skill-info skill-or-id)
         my-pos (get-pos unit)
         target-pos (get-pos target)]
     (println (get-name unit) my-pos target-pos shape range vert-range x-min x-max)
+
     (case shape
       :sphere (within-cylinder? target-pos my-pos (+ x-max (get-remaining-move unit)) vert-range)
       :column (is-single-target? skill-or-id)
@@ -149,7 +146,6 @@
 (defn-unit usable-skills [unit]
   (let [skills (get-all-skills unit)
         sp     (get-sp unit)]
-    (println (count skills))
     (filter (every-pred
              (partial can-use-skill? sp)
              (partial should-use-skill? unit))
@@ -161,11 +157,14 @@
 
 (defn select-skill [target]
   (let [unit (active-unit)
-        skill (rand-nth (skills-reaching target))
-        choose (get-skill-pos (get-all-skills) skill)]
-    (println (skill-name skill))
-    (println (skill-name (nth (get-all-skills) choose)))
-    choose))
+        skills (skills-reaching target)]
+    (if-not skills
+      0
+      (let [skill (apply min-key skill-sp-cost skills)
+            pos (get-skill-pos (get-all-skills) skill)]
+        (println (skill-name skill))
+        (println (skill-name (nth (get-all-skills) pos)))
+        pos))))
 
 (defn dist-unit
   ([a b]          (dist (pos-x a) (pos-z a)
@@ -206,15 +205,15 @@
   (when (and unit (seq coll))
     (apply min-key (partial dist-unit unit) coll)))
 
-(defn-unit nearby? [unit target-unit max-x max-y]
+(defn-unit nearby? [unit target-unit radius vert-range]
   (let [target-pos (get-pos target-unit)
         my-pos (get-pos unit)]
     (within-cylinder? target-pos my-pos
-                      [max-x (- max-x)]
-                      [max-y (- max-y)])))
+                      radius
+                      vert-range)))
 
-(defn-unit units-nearby [unit range-x range-y coll]
-  (let [comparator (fn [target-unit] (nearby? unit target-unit range-x range-y))
+(defn-unit units-nearby [unit radius vert-range coll]
+  (let [comparator (fn [target-unit] (nearby? unit target-unit radius vert-range))
         nearby-units (remove #{unit} (filter comparator coll))]
     (set nearby-units)))
 
@@ -222,8 +221,8 @@
 (def confine-upper 1000)
 (def confine-lower 1000)
 
-(defn confine-targets []
-  (let [nearby-items (units-nearby (active-unit) confine-radius (item-units))]
+(defn-unit confine-targets [unit]
+  (let [nearby-items (units-nearby unit confine-radius [confine-upper confine-lower] (item-units))]
     (set (remove is-being-held? nearby-items))))
 
 (defn-unit too-close? [unit target]

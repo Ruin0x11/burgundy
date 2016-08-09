@@ -219,12 +219,10 @@
 (defn within-cylinder? [pos center radius vert-range]
   (let [[x y z]       pos
         [cx cy cz]    center
-        [min-y max-y] vert-range]
-    (println (<= min-y y max-y)
-             (dist x z cx cz)
-             (<= (dist x z cx cz) radius)
-             radius)
-    (and (<= min-y y max-y)
+        [max-y min-y] vert-range
+        upper (+ y max-y)
+        lower (- y min-y)]
+    (and (<= lower y upper)
          (<= (dist x z cx cz) radius))))
 
 (defn dist
