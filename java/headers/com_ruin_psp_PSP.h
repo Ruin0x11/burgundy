@@ -8,9 +8,9 @@
 extern "C" {
 #endif
 #undef com_ruin_psp_PSP_numSkills
-#define com_ruin_psp_PSP_numSkills 549L
+#define com_ruin_psp_PSP_numSkills 577L
 #undef com_ruin_psp_PSP_skillOffset
-#define com_ruin_psp_PSP_skillOffset 17274840L
+#define com_ruin_psp_PSP_skillOffset 17274844L
 /*
  * Class:     com_ruin_psp_PSP
  * Method:    greetSelf

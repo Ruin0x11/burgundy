@@ -104,16 +104,38 @@
    :upper  (get-skill-upper skill-or-id)
    :lower  (get-skill-lower skill-or-id)})
 
+(def skill-equip-types
+  {0 :free
+   1 :armed
+   2 :unarmed
+   3 :combo
+   4 :passive})
+
 ;; TODO: temporary
 (defn is-spherical? [skill-or-id]
   (= :sphere (get-skill-shape skill-or-id)))
 
+(defn skill-equip-type [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (get skill-equip-types (.getEquipType skill))))
+
+;; skill equip type predicates (armed-skill?)
+(doseq [v (vals skill-equip-types)]
+  (intern *ns*
+          (symbol (str (name v) "-skill?"))
+          (fn [skill-or-id] (= v (skill-equip-type skill-or-id)))))
+
+(defn unequip-skill? [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (.isUnequip skill)))
+
 (defn is-attack? [skill-or-id]
   (let [type (skill-attack-type skill-or-id)
         kw (skill-keyword skill-or-id)]
-    (and (every? #(not= type %) [:recovery :support])
-         ;;TODO: detect this
-         (not= kw :return))))
+    (and (not-any? #(= type %) [:recovery :support])
+         (not (passive-skill? skill-or-id))
+         ;;TODO: detect these
+         (not-any? #(= kw %) [:return :toss :pass]))))
 
 (defn is-heal? [skill-or-id]
   (let [type (skill-attack-type skill-or-id)]

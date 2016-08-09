@@ -26,6 +26,21 @@ public class SkillType {
     private byte spType;
     private byte attackType;
 
+    private boolean unequip;
+
+    public enum EquipType {
+        ANY,
+        ARMED,
+        UNARMED,
+        COMBO,
+        PASSIVE;
+        public int getID() {
+            return ordinal();
+        }
+    }
+
+    private int equipType;
+
     private int manaCost;
 
     public SkillType(byte[] data) {
@@ -34,28 +49,43 @@ public class SkillType {
 
         this.data = data;
 
-        this.id = bb.getShort(0x04);
-        this.spCost = bb.getShort(0x08);
+        this.id = bb.getShort(0x00);
+        this.spCost = bb.getShort(0x04);
 
-        byte[] stringData = Arrays.copyOfRange(data, 0x0C, 0x0C + 16);
+        byte[] stringData = Arrays.copyOfRange(data, 0x08, 0x08 + 16);
         this.name = PSP.getStringAt(stringData);
-        stringData = Arrays.copyOfRange(data, 0x22, 0x22 + 32);
+        stringData = Arrays.copyOfRange(data, 0x1A, 0x1A + 32);
         // there are some special characters that need to be stripped
         this.desc = PSP.getStringAt(stringData);
 
-        this.power = bb.get(0x6B);
-        this.spType = bb.get(0x70);
-        this.shape = bb.get(0x72);
-        this.attackType = bb.get(0x74);
-        this.range = bb.get(0x75);
-        this.radius = bb.get(0x76);
-        this.limitUpper = bb.get(0x77);
-        this.limitLower = bb.get(0x78);
+        this.power = bb.get(0x63);
+        this.spType = bb.get(0x68);
+        // this.baseSkill = bb.get(0x69) == 1;
+        this.shape = bb.get(0x6A);
+        this.attackType = bb.get(0x6C);
+        this.range = bb.get(0x6D);
+        this.radius = bb.get(0x6E);
+        this.limitUpper = bb.get(0x6F);
+        this.limitLower = bb.get(0x70);
+        System.out.printf("%16s %s\n", bb.get(0x7a), this.name);
 
         this.manaCost = bb.getInt(0x00);
 
-        // if 0x5 = 1 or 2, passive skill?
-        // or 0x74 = 050C?
+        byte[] unequipChar = new byte[] {(byte)0x87, (byte)0x66};
+        this.unequip = PSP.find(stringData, unequipChar) != -1;
+
+        int equipTypeData = bb.get(0x7A);
+        if(equipTypeData == 6 || equipTypeData == 70) {
+            this.equipType = EquipType.COMBO.getID();
+        } else if(equipTypeData == 81){
+            this.equipType = EquipType.UNARMED.getID();
+        } else if(equipTypeData == 0) {
+            this.equipType = EquipType.PASSIVE.getID();
+        } else if(equipTypeData == 31 || equipTypeData == 15) {
+            this.equipType = EquipType.ARMED.getID();
+        } else {
+            this.equipType = EquipType.ANY.getID();
+        }
     }
 
     public int getID() {
@@ -108,6 +138,14 @@ public class SkillType {
 
     public int getManaCost() {
         return manaCost;
+    }
+
+    public boolean isUnequip() {
+        return unequip;
+    }
+
+    public int getEquipType() {
+        return equipType;
     }
 
     public void dump() {

@@ -159,9 +159,13 @@
     (menu-key-seq (battle-unit-cursor) 1 :battle-unit)
     (press :cross)))
 
+  ;; TODO: pass in skill id to use here
+
   (play-input
    (concat
-    (menu-key-seq (battle-attack-cursor) 0 :battle-attack
+    (menu-key-seq (battle-attack-cursor)
+                  (select-skill target)
+                  :battle-attack
                   (count (get-all-skills)))
     (press :cross)))
 

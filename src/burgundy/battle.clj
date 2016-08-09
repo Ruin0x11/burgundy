@@ -87,8 +87,8 @@
   :goal-state (not (nil? result))
   :action (let [target (closest (enemy-units))]
             (cond (too-close? target)         (move-unit target 20.0 :away)
-                  (not (in-range? target 30)) (move-unit target 10.0))
-            (if (in-range? (active-unit) target 30)
+                  (not (in-range? target)) (move-unit target 10.0))
+            (if (in-range? target)
               target nil))
   :on-success (add-task (attack-task result)))
 

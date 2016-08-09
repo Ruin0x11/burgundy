@@ -87,19 +87,29 @@
 (defn-unit unit-byte [unit n]
   (nth (unit-memory unit) n))
 
-
+;; returns all skills, including passives and combos
+;; which may not be usable at the time
 (defn-unit get-skills [unit]
   (.getSkills unit))
 
-(defn-unit get-all-skills [unit]
-  (concat (get-skills unit)
-          (when (is-holding? unit)
-            (get-skills (get-held-unit unit)))))
+(defn-unit get-usable-skills [unit]
+  (let [skills (get-skills unit)
+        actives (remove passive-skill? skills)]
+    (as-> actives s
+      (if (is-being-held? unit) s (remove combo-skill? s))
+      (if (is-holding? unit) (remove unarmed-skill? s) (remove armed-skill? s))
 
-(defn-unit get-skill-pos [unit skill]
-  (let [skills (map skill-id (get-all-skills unit))
+      )))
+
+(defn-unit get-all-skills [unit]
+  (concat (get-usable-skills unit)
+          (when (is-holding? unit)
+            (get-usable-skills (get-held-unit unit)))))
+
+(defn get-skill-pos [skills skill]
+  (let [skill-ids (map skill-id skills)
         id (skill-id skill)]
-    (.indexOf skills id)))
+    (.indexOf skill-ids id)))
 
 (defn-unit get-sp [unit]
   (do (zipmap (vals skill-sp-kws) (.getSp unit))))
@@ -124,15 +134,16 @@
     (println (get-name unit) my-pos target-pos shape range vert-range x-min x-max)
     (case shape
       :sphere (within-cylinder? target-pos my-pos (+ x-max (get-remaining-move unit)) vert-range)
-      :column false
+      :column (is-single-target? skill-or-id)
       :triangle false)))
 
 (defn-unit in-range? [unit target]
-  (some (filter (partial skill-in-range? unit target) (get-skills))))
+  (some (filter (partial skill-in-range? unit target)) (get-skills)))
 
 (defn-unit should-use-skill? [unit skill]
   (and (or (is-spherical? skill)
            (is-single-target? skill))
+       (not (unequip-skill? skill))
        (is-attack? skill)))
 
 (defn-unit usable-skills [unit]
@@ -148,10 +159,13 @@
   (let [skills (usable-skills unit)]
     (filter (partial skill-in-range? unit target) skills)))
 
-(defn select-skill-pos [target]
-  (let [unit (active-unit)]
-    (get-skill-pos
-     (first (skills-reaching target)))))
+(defn select-skill [target]
+  (let [unit (active-unit)
+        skill (rand-nth (skills-reaching target))
+        choose (get-skill-pos (get-all-skills) skill)]
+    (println (skill-name skill))
+    (println (skill-name (nth (get-all-skills) choose)))
+    choose))
 
 (defn dist-unit
   ([a b]          (dist (pos-x a) (pos-z a)

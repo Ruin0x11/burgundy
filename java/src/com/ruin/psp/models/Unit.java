@@ -124,7 +124,7 @@ public class Unit {
 
                 this.skills = new ArrayList<Skill>();
                 for(int i = 0; i < this.numSkills; i++) {
-                    int skillOffset = 0x100 + (0x8 * i);
+                    int skillOffset = 0xF8 + (0x8 * i);
                     byte[] skillData = PSP.readRam(this.friendlyUnitOffset + skillOffset, 8);
                     Skill skill = new Skill(skillData);
                     skills.add(skill);
