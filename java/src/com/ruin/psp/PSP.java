@@ -62,7 +62,7 @@ public class PSP {
     /**
      * Returns the number of units counted as summoned.
      */
-    public int summonedUnits() {
+    public static int summonedUnits() {
         return readRAMU16(0x0012F384);
     }
 
@@ -191,11 +191,11 @@ public class PSP {
     }
 
     public static int getTotalUnits() {
-        int friendlyUnits = readRAMU16(0x0012F37C);
-        int friendlyUnitsAndItems = readRAMU16(0x0012F384);
+        int friendlyCharas = readRAMU16(0x0012F37C);
+        int summonedUnits = summonedUnits();
         int otherUnits = readRAMU16(0x0012F388);
         // including marona
-        return (friendlyUnitsAndItems - friendlyUnits) + otherUnits + 1;
+        return (summonedUnits - friendlyCharas) + otherUnits + 1;
     }
 
     public static int getIslandMenuCursorPos() {
@@ -369,7 +369,6 @@ public class PSP {
         neutralUnits.clear();
         itemUnits.clear();
         deadUnits.clear();
-        // System.out.println(getTotalUnits());
         int total = getTotalUnits();
         for(int i = 0; i < total; i++) {
             int offset = objectAddress + (i*objectSize);
@@ -380,10 +379,8 @@ public class PSP {
             if(unitSentinel != 0x0000) {
                 Unit unit = new Unit(unitRam);
                 units.put(unit.getID(), unit);
-                if(unit.getCurrentHp() == 0) {
+                if(unit.isDead()) {
                     deadUnits.add(unit);
-                    // don't count the dead unit against the total
-                    total++;
                 }
                 else if(unit.isItem()) {
                     itemUnits.add(unit);

@@ -69,6 +69,7 @@ public class Unit {
     private int jump;
     private int remove;
     private boolean hasAttacked;
+    private boolean isVisible;
 
     // if a unit is friendly, this points to the memory location of that unit's stats
     private int friendlyUnitOffset;
@@ -118,7 +119,7 @@ public class Unit {
             if(this.friendlyUnitOffset != 0) {
                 this.mana = PSP.readRAMU32(this.friendlyUnitOffset + 148);
 
-                byte[] nameData = PSP.readRam(this.friendlyUnitOffset + 16, 24);
+                byte[] nameData = PSP.readRam(this.friendlyUnitOffset + 16, 23);
                 this.name = PSP.getStringAt(nameData);
 
                 this.numSkills = PSP.readRAMU16(this.friendlyUnitOffset + 616);
@@ -159,16 +160,11 @@ public class Unit {
             }
         }
         else {
-            // get 16 bytes at 0x2C8
-            byte[] nameData = new byte[16];
+            // get 27 bytes at 0x2B8
+            byte[] nameData = new byte[27];
             bb.position(0x2B8);
             bb.get(nameData);
-
-            try {
-                this.name = new String(nameData, "SHIFT-JIS");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            this.name = PSP.getStringAt(nameData);
         }
 
         if(this.isItem()) {
@@ -193,6 +189,9 @@ public class Unit {
         this.remainingMove = bb.getFloat(0x604);
 
         this.hasAttacked = bb.getInt(0x848) == 1;
+
+        // 0x140 0x521 0x522
+        this.isVisible = bb.get(0x17F) == 1;
 
         float rotation = bb.getFloat(0x15C);
     }
@@ -323,6 +322,10 @@ public class Unit {
 
     public List<Skill> getSkills() {
         return Collections.unmodifiableList(this.skills);
+    }
+
+    public boolean isDead() {
+        return (currentHP == 0) || (!isVisible);
     }
 
     public void dump() {
