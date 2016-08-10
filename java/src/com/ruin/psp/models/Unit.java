@@ -66,6 +66,7 @@ public class Unit {
 
     private float maxMove;
     private float remainingMove;
+    private int jump;
     private int remove;
     private boolean hasAttacked;
 
@@ -187,6 +188,7 @@ public class Unit {
 
         this.isBeingHeld = bb.getInt(0x180) == 0;
 
+        this.jump = bb.getInt(0x81a);
         this.maxMove = bb.getFloat(0x600);
         this.remainingMove = bb.getFloat(0x604);
 
@@ -265,6 +267,10 @@ public class Unit {
 
     public float getRemainingMove() {
         return remainingMove;
+    }
+
+    public int getJump() {
+        return jump;
     }
 
     public int getMana() {

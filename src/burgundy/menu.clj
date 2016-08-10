@@ -1,5 +1,6 @@
 (ns burgundy.menu
   (:require [burgundy.interop :refer :all]
+            [burgundy.skill :refer :all]
             [burgundy.unit :refer :all]))
 
 (def menu-scroll-amounts
@@ -148,7 +149,17 @@
       (wait-until-active))
     (look-for-walkable (active-unit))))
 
-(defn attack [target]
+(defn select-skill [target skills]
+  (let [unit (active-unit)]
+    (if-not skills
+      0
+      (let [skill (apply min-key skill-sp-cost skills)
+            pos (get-skill-pos (get-all-skills) skill)]
+        (println (skill-name skill))
+        (println (skill-name (nth (get-all-skills) pos)))
+        pos))))
+
+(defn attack [target skill-id]
   (println "Take this.")
   (println (str "pos:" (battle-attack-cursor)))
   (select-unit target)
@@ -164,18 +175,16 @@
   (play-input
    (concat
     (menu-key-seq (battle-attack-cursor)
-                  (select-skill target)
+                  skill-id
                   :battle-attack
                   (count (get-all-skills)))
-    (press :cross)))
+    (press :cross 4)))
 
   (if (can-attack?)
     (do
       (play-input
        (press :cross))
-      (wait-until-active)
-      (when-not (has-attacked?)
-        (recur target)))
+      (wait-until-active))
     (do
       (cancel)
       (cancel)

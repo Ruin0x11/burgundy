@@ -208,6 +208,17 @@
 (defn to-bits [i]
   (str "2r" (Integer/toBinaryString i)))
 
+
+(defn player-x [] (PSP/getPlayerX))
+(defn player-y [] (PSP/getPlayerY))
+(defn player-z [] (PSP/getPlayerZ))
+
+(defn get-player-pos []
+  (let [x (player-x)
+        y (player-y)
+        z (player-z)]
+    [x y z]))
+
 (defn within-area? [pos min-pos max-pos]
   (every? true? (concat
                  (map >= pos min-pos)
@@ -222,6 +233,11 @@
         [max-y min-y] vert-range
         upper (+ y max-y)
         lower (- y min-y)]
+    (println (<= lower y upper)
+             min-y y max-y
+             (dist x z cx cz)
+             (<= (dist x z cx cz) radius)
+             radius)
     (and (<= lower y upper)
          (<= (dist x z cx cz) radius))))
 

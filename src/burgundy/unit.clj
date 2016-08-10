@@ -25,12 +25,6 @@
         z (pos-z unit)]
     [x y z]))
 
-(defn get-player-pos []
-  (let [x (PSP/getPlayerX)
-        y (PSP/getPlayerY)
-        z (PSP/getPlayerZ)]
-    [x y z]))
-
 (defn-unit is-in-air? [unit]
   (> (Math/abs (vel-y unit)) 1.0))
 
@@ -48,6 +42,8 @@
 (defn-unit get-max-move [unit] (.getRemainingMove unit))
 
 (defn-unit get-remaining-move [unit] (.getRemainingMove unit))
+
+(defn-unit get-jump [unit] (.getJump unit))
 
 (defn-unit get-held-unit [unit]
   (let [id (.getHeldItemID unit)]
@@ -126,12 +122,16 @@
         vert-range (skill-range-vertical skill-or-id)
         {:keys [shape range]} (get-skill-info skill-or-id)
         my-pos (get-pos unit)
-        target-pos (get-pos target)]
+        target-pos (get-pos target)
+        move (get-remaining-move unit)]
     (println (get-name unit) my-pos target-pos shape range vert-range x-min x-max)
+    (println (skill-name skill-or-id))
 
     (case shape
-      :sphere (within-cylinder? target-pos my-pos (+ x-max (get-remaining-move unit)) vert-range)
-      :column (is-single-target? skill-or-id)
+      :sphere (within-cylinder? target-pos my-pos (+ x-max move) vert-range)
+      ;;TODO: find better metric
+      :column (and (is-single-target? skill-or-id)
+                   (within-cylinder? target-pos my-pos (+ x-max move) vert-range))
       :triangle false)))
 
 (defn-unit in-range? [unit target]
@@ -154,17 +154,6 @@
 (defn-unit skills-reaching [unit target]
   (let [skills (usable-skills unit)]
     (filter (partial skill-in-range? unit target) skills)))
-
-(defn select-skill [target]
-  (let [unit (active-unit)
-        skills (skills-reaching target)]
-    (if-not skills
-      0
-      (let [skill (apply min-key skill-sp-cost skills)
-            pos (get-skill-pos (get-all-skills) skill)]
-        (println (skill-name skill))
-        (println (skill-name (nth (get-all-skills) pos)))
-        pos))))
 
 (defn dist-unit
   ([a b]          (dist (pos-x a) (pos-z a)
@@ -197,8 +186,7 @@
    (let [rad (deg->rad angle)
          px (+ x (* distance (Math/cos rad)))
          pz (+ z (* distance (Math/sin rad)))]
-     [px pz]))
-  )
+     [px pz])))
 
 
 (defn-unit closest [unit coll]
@@ -232,7 +220,9 @@
   (and (is-active?)
        (not (is-in-air?))))
 
-(def selection-dist 2.0)
+(def selection-dist 0.5)
+
+(def camera-angle 225)
 
 (defn move-to
   ([unit] (move-to unit selection-dist))
@@ -242,12 +232,26 @@
    (let [comparator (if (= dir :away) < >)
          angle-fn (if (= dir :away) angle-away angle-to)]
      (while (comparator (dist-unit unit) within)
-       (let [angle (mod (+ (angle-fn unit) 225) 360)
+       (let [angle (mod (+ (angle-fn unit) camera-angle) 360)
              scale (if (comparator (dist-unit unit) (+ 5.0 within)) 1.0 0.75)
              [ax ay] (angle->analog angle scale)]
          (play-input [[[:analog ax ay] 1]])
-         ;; (step)
          )))))
+
+(defn move-towards
+  ([unit] (let [[x _ z] (get-pos unit)]
+            (move-towards x z)))
+  ([x z]
+   (let [angle (mod (+ (angle-to x z (player-x) (player-z)) camera-angle) 360)
+         scale (if (> (dist x z (player-x) (player-z)) 5) 1.0 0.75)
+         [ax ay] (angle->analog angle scale)]
+     (play-input [[[:analog ax ay] 1]]))))
+
+(defn move-to-unit [unit]
+  (when (or (nil? (selected-unit))
+            (not= (get-id (selected-unit)) (get-id unit)))
+    (move-towards unit)
+    (recur unit)))
 
 (defn select-unit-in-cursor
   "When there are multiple units near the cursor, cycles to the given one."
@@ -271,6 +275,6 @@
 (defn select-unit
   "Moves the cursor to and selects the given unit."
   [unit]
-  (move-to unit)
-  (do-nothing menu-delay)
+  (move-to-unit unit)
+  (do-nothing 10)
   (select-unit-in-cursor unit))

@@ -16,11 +16,13 @@
             (seq (:name obj))
             )))
 
-(defn snoop-range [start byte-offset count]
-  (let [addresses (take count (range start (+ (* byte-offset count) start) byte-offset))]
+(defn snoop-range
+  ([start] (snoop-range start 4 8))
+  ([start byte-offset count]
+   (let [addresses (take count (range start (+ (* byte-offset count) start) byte-offset))]
      (doseq-indexed i [addr addresses]
-       (printf "0x%8X (+%04X): %08X %d %.6f\n" addr (* byte-offset i) (PSP/readRAMU32 addr) (PSP/readRAMU16 addr) (PSP/readRAMU32Float addr)))
-   (println)))
+                    (printf "0x%8X (+%04X): %08X %d %.6f\n" addr (* byte-offset i) (PSP/readRAMU32 addr) (PSP/readRAMU16 addr) (PSP/readRAMU32Float addr)))
+     (println))))
 
 (defn run-once []
   (save-state "temp")
@@ -64,7 +66,7 @@
 
     (restart!)
     (PSP/setFramelimit false)
-    (load-state "go")
+    (load-state "trolly")
     (step)
     (step)
     (gen-type-kw-maps)

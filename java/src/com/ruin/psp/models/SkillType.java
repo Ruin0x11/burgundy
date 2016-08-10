@@ -61,7 +61,7 @@ public class SkillType {
         this.power = bb.get(0x6B);
         this.spType = bb.get(0x6C);
         // this.baseSkill = bb.get(0x69) == 1;
-        this.shape = bb.get(0x6F);
+        this.shape = bb.get(0x6E);
         this.attackType = bb.get(0x70);
         this.range = bb.get(0x71);
         this.radius = bb.get(0x72);

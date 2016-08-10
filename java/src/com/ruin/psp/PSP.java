@@ -191,8 +191,11 @@ public class PSP {
     }
 
     public static int getTotalUnits() {
-        // return readRAMU8(0x0014AC6B);
-        return 128;
+        int friendlyUnits = readRAMU16(0x0012F37C);
+        int friendlyUnitsAndItems = readRAMU16(0x0012F384);
+        int otherUnits = readRAMU16(0x0012F388);
+        // including marona
+        return (friendlyUnitsAndItems - friendlyUnits) + otherUnits + 1;
     }
 
     public static int getIslandMenuCursorPos() {
@@ -366,15 +369,21 @@ public class PSP {
         neutralUnits.clear();
         itemUnits.clear();
         deadUnits.clear();
-        for(int i = 0; i < getTotalUnits(); i++) {
-            byte[] unitRam = readRam(objectAddress + (i*objectSize), objectSize);
+        // System.out.println(getTotalUnits());
+        int total = getTotalUnits();
+        for(int i = 0; i < total; i++) {
+            int offset = objectAddress + (i*objectSize);
+            byte[] unitRam = readRam(offset, objectSize);
 
             // the unit exists if one of the two bytes at 0x844 are not 0
-            if((unitRam[0x844] & 0xFF) != 0x0 || (unitRam[0x845] & 0xFF) != 0x0) {
+            int unitSentinel = readRAMU16(offset + 0x844);
+            if(unitSentinel != 0x0000) {
                 Unit unit = new Unit(unitRam);
                 units.put(unit.getID(), unit);
                 if(unit.getCurrentHp() == 0) {
                     deadUnits.add(unit);
+                    // don't count the dead unit against the total
+                    total++;
                 }
                 else if(unit.isItem()) {
                     itemUnits.add(unit);

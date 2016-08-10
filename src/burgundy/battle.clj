@@ -1,12 +1,13 @@
 (ns burgundy.battle
   (:require [burgundy.interop :refer :all]
             [burgundy.unit :refer :all]
+            [burgundy.skill :refer :all]
             [burgundy.menu :refer :all]
             [burgundy.task :refer :all]
             [burgundy.queue :refer :all]
             [clojure.set :refer [intersection]]))
 
-(def battle-state (ref {:summoned-units 0} ))
+(def battle-state (ref {:summoned-units 0 :attempted-skills []} ))
 
 (def-task end-action-task []
   :desc ["Ending action."]
@@ -14,7 +15,8 @@
   :max-attempts 1
   :goal-state false
   ;;TODO: detect if changing units
-  :action (end-action))
+  :action (end-action)
+   )
 
 (def-task intrusion-stage-task []
   :desc ["Confirming intrusion stage screen."]
@@ -29,7 +31,10 @@
   :action (do (start-stage)
               (dosync
                (commute battle-state assoc-in [:summoned-units] (summoned-units))
-               (commute battle-state assoc-in [:enemy-units] (count (enemy-units))))))
+               (commute battle-state assoc-in [:attempted-skills] [])
+               (commute battle-state assoc-in [:enemy-units] (count (enemy-units)))
+
+               )))
 
 (def-task finish-stage-task []
   :desc ["Finishing stage."]
@@ -76,7 +81,13 @@
   :max-attempts 3
   :goal-state (or (has-attacked?)
                   (not (has-move-remaining?)))
-  :action (attack target)
+  :action (let [attempted (:attempted-skills @battle-state)
+                skills (filter #(some #{(skill-id %)} attempted) (skills-reaching (target)))
+                id (select-skill target skills)]
+            (attack id)
+            (println (skill-name id))
+            (dosync
+             (commute battle-state assoc-in [:attempted-skills] (conj attempted id))))
   :on-failure (when (is-marona?)
                 (add-task (confine-near-task 0 target))))
 
