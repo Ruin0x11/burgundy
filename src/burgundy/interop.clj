@@ -91,7 +91,7 @@
 (defn battle-confine-cursor [] (PSP/getConfineMenuCursorPos))
 
 (defn list-units [] (.listUnits api))
-(defn summoned-units [] (.summonedUnits api))
+(defn summoned-units [] (PSP/getSummonedUnits))
 
 (defn contiguous-memory
   "Returns count arrays of size bytes starting at offset."

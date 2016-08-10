@@ -155,6 +155,7 @@ public class Unit {
             int itemOffset = bb.getInt(0x57c);
             if(itemOffset != 0) {
                 this.heldItemID = PSP.readRAMU16((itemOffset - 0x8800000) + 0x842);
+                // System.out.println("Held item is: " + this.heldItemID);
             } else {
                 this.heldItemID = -1;
             }
@@ -191,7 +192,7 @@ public class Unit {
         this.hasAttacked = bb.getInt(0x848) == 1;
 
         // 0x140 0x521 0x522
-        this.isVisible = bb.get(0x17F) == 1;
+        this.isVisible = this.isItem && bb.get(0x17F) == 1;
 
         float rotation = bb.getFloat(0x15C);
     }

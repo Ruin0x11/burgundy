@@ -151,10 +151,11 @@
 
 (defn select-skill [target skills]
   (let [unit (active-unit)]
-    (if-not skills
+    (if (empty? skills)
       0
       (let [skill (apply min-key skill-sp-cost skills)
             pos (get-skill-pos (get-all-skills) skill)]
+        (println pos)
         (println (skill-name skill))
         (println (skill-name (nth (get-all-skills) pos)))
         pos))))

@@ -82,9 +82,9 @@
   :goal-state (or (has-attacked?)
                   (not (has-move-remaining?)))
   :action (let [attempted (:attempted-skills @battle-state)
-                skills (filter #(some #{(skill-id %)} attempted) (skills-reaching (target)))
+                skills (filter #(some #{(skill-id %)} attempted) (skills-reaching target))
                 id (select-skill target skills)]
-            (attack id)
+            (attack target id)
             (println (skill-name id))
             (dosync
              (commute battle-state assoc-in [:attempted-skills] (conj attempted id))))

@@ -67,7 +67,6 @@ public class SkillType {
         this.radius = bb.get(0x72);
         this.limitUpper = bb.get(0x73);
         this.limitLower = bb.get(0x74);
-        System.out.printf("%16s %s\n", bb.get(0x7a), this.name);
 
         this.manaCost = bb.getInt(0x00);
 

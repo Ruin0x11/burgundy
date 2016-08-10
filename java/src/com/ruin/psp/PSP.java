@@ -62,7 +62,7 @@ public class PSP {
     /**
      * Returns the number of units counted as summoned.
      */
-    public static int summonedUnits() {
+    public static int getSummonedUnits() {
         return readRAMU16(0x0012F384);
     }
 
@@ -192,7 +192,7 @@ public class PSP {
 
     public static int getTotalUnits() {
         int friendlyCharas = readRAMU16(0x0012F37C);
-        int summonedUnits = summonedUnits();
+        int summonedUnits = getSummonedUnits();
         int otherUnits = readRAMU16(0x0012F388);
         // including marona
         return (summonedUnits - friendlyCharas) + otherUnits + 1;
@@ -416,6 +416,10 @@ public class PSP {
         System.out.println();
         System.out.println("=== Item Units ===");
         for(Unit cur : itemUnits) {
+            System.out.println(cur.getName() + " [" + cur.getID() + "]");
+        }
+        System.out.println("=== Dead Units ===");
+        for(Unit cur : deadUnits) {
             System.out.println(cur.getName() + " [" + cur.getID() + "]");
         }
         System.out.println();
