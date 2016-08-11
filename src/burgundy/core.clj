@@ -35,12 +35,12 @@
   (step)
   (run-battle-engine))
 
-(defn rewind []
+(defn rewind-run []
   (load-state "temp")
   (step)
   (run-battle-engine))
 
-(defn rewind-stop []
+(defn rewind []
   (load-state "temp"))
 
 (defn play [n]
@@ -72,7 +72,7 @@
 
     (restart!)
     (PSP/setFramelimit false)
-    (load-state "ash")
+    (load-state "tako")
     (step)
     (step)
     (gen-type-kw-maps)

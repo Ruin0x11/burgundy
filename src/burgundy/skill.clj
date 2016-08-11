@@ -72,37 +72,37 @@
             sp (sp-type all-sp)]
         (> sp (skill-sp-cost skill-or-id)))))
 
-(defn get-skill-shape [skill-or-id]
+(defn skill-shape [skill-or-id]
   (let [skill (get-skill-type skill-or-id)]
     (get skill-shapes (.getShape skill))))
 
-(defn get-skill-radius [skill-or-id]
+(defn skill-radius [skill-or-id]
   (let [skill (get-skill-type skill-or-id)]
     (.getRadius skill)))
 
-(defn get-skill-range [skill-or-id]
+(defn skill-range [skill-or-id]
   (let [skill (get-skill-type skill-or-id)]
     (.getRange skill)))
 
-(defn get-skill-lower [skill-or-id]
+(defn skill-lower [skill-or-id]
   (let [skill (get-skill-type skill-or-id)]
     (.getLimitLower skill)))
 
-(defn get-skill-upper [skill-or-id]
+(defn skill-upper [skill-or-id]
   (let [skill (get-skill-type skill-or-id)]
     (.getLimitUpper skill)))
 
-(defn get-skill-info [skill-or-id]
+(defn skill-details [skill-or-id]
   {:keyword (skill-keyword skill-or-id)
    :attack-type (skill-attack-type skill-or-id)
    :sp-cost (skill-sp-cost skill-or-id)
    :sp-type (skill-sp-type skill-or-id)
 
-   :shape  (get-skill-shape skill-or-id)
-   :range  (get-skill-range skill-or-id)
-   :radius (get-skill-radius skill-or-id)
-   :upper  (get-skill-upper skill-or-id)
-   :lower  (get-skill-lower skill-or-id)})
+   :shape  (skill-shape skill-or-id)
+   :range  (skill-range skill-or-id)
+   :radius (skill-radius skill-or-id)
+   :upper  (skill-upper skill-or-id)
+   :lower  (skill-lower skill-or-id)})
 
 (def skill-equip-types
   {0 :free
@@ -113,7 +113,7 @@
 
 ;; TODO: temporary
 (defn is-spherical? [skill-or-id]
-  (= :sphere (get-skill-shape skill-or-id)))
+  (= :sphere (skill-shape skill-or-id)))
 
 (defn skill-equip-type [skill-or-id]
   (let [skill (get-skill-type skill-or-id)]
@@ -142,14 +142,14 @@
     (= type :recovery)))
 
 (defn is-single-target? [skill-or-id]
-  (let [{:keys [shape radius]} (get-skill-info skill-or-id)]
+  (let [{:keys [shape radius]} (skill-details skill-or-id)]
     (and (= shape :column)
          (= radius 0))))
 
 (defn skill-range-horizontal
   "Given a skill, returns the maximum and minimum distance it can reach on the x-z plane."
   [skill-or-id]
-  (let [{:keys [shape range radius]} (get-skill-info skill-or-id)]
+  (let [{:keys [shape range radius]} (skill-details skill-or-id)]
     (case shape
       :sphere   [0 (+ range radius)]
       :column   [(- range radius) (+ range radius)]
@@ -158,5 +158,5 @@
 (defn skill-range-vertical
   "Given a skill, returns the maximum and minimum distance it can reach on the x-y plane."
   [skill-or-id]
-  (let [{:keys [upper lower]} (get-skill-info skill-or-id)]
+  (let [{:keys [upper lower]} (skill-details skill-or-id)]
     [upper lower]))

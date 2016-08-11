@@ -134,7 +134,7 @@
                     (when (is-holding? unit)
                       (get-usable-skills (get-held-unit unit))))))
 
-(defn get-skill-pos [skills skill]
+(defn get-skill-pos [skill skills]
   (let [skill-ids (map skill-id skills)
         id (skill-id skill)]
     (.indexOf skill-ids id)))
@@ -154,12 +154,12 @@
   [unit target skill-or-id]
   (let [[x-min x-max] (skill-range-horizontal skill-or-id)
         vert-range (skill-range-vertical skill-or-id)
-        {:keys [shape range]} (get-skill-info skill-or-id)
+        {:keys [shape range]} (skill-details skill-or-id)
         my-pos (get-pos unit)
         target-pos (get-pos target)
         move (get-remaining-move unit)]
-    (println (get-name unit) my-pos target-pos shape range vert-range x-min x-max)
-    (println (skill-name skill-or-id))
+    ;; (println (get-name unit) my-pos target-pos shape range vert-range x-min x-max)
+    ;; (println (skill-name skill-or-id))
 
     (case shape
       :sphere (within-cylinder? target-pos my-pos (+ x-max move) vert-range)

@@ -233,11 +233,11 @@
         [max-y min-y] vert-range
         upper (+ y max-y)
         lower (- y min-y)]
-    (println (<= lower y upper)
-             min-y y max-y
-             (dist x z cx cz)
-             (<= (dist x z cx cz) radius)
-             radius)
+    ;; (println (<= lower y upper)
+    ;;          min-y y max-y
+    ;;          (dist x z cx cz)
+    ;;          (<= (dist x z cx cz) radius)
+    ;;          radius)
     (and (<= lower y upper)
          (<= (dist x z cx cz) radius))))
 

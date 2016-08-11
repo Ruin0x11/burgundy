@@ -150,46 +150,54 @@
     (look-for-walkable (active-unit))))
 
 (defn select-skill [target skills]
-  (let [unit (active-unit)]
+  (let [unit (active-unit)
+        skills (skills-reaching target)]
     (if (empty? skills)
       0
-      (let [skill (apply min-key skill-sp-cost skills)
-            pos (get-skill-pos (get-all-skills) skill)]
-        (println pos)
-        (println (skill-name skill))
-        (println (skill-name (nth (get-all-skills) pos)))
-        pos))))
+      (apply min-key skill-sp-cost skills))))
 
-(defn attack [target skill-id]
-  (println "Take this.")
-  (println (str "pos:" (battle-attack-cursor)))
-  (select-unit target)
-  (play-input
-   (concat
-    (wait 10)
-    (press :cross)
-    (menu-key-seq (battle-unit-cursor) 1 :battle-unit)
-    (press :cross)))
+(defn attack
+  ([target skill skills] (attack target skill skills 3))
+  ([target skill skills retries]
+   (println "Take this.")
+   (println (str "pos:" (battle-attack-cursor)))
 
-  ;; TODO: pass in skill id to use here
+   (println (skill-name skill))
+   (if (is-single-target? skill)
+     (do (println "single target")
+         (select-unit target))
+     (do
+       (println "GO")
+       (move-unit target (skill-range skill))
+       (select-unit target)))
 
-  (play-input
-   (concat
-    (menu-key-seq (battle-attack-cursor)
-                  skill-id
-                  :battle-attack
-                  (count (get-all-skills)))
-    (press :cross 4)))
+   (play-input
+    (concat
+     (wait 10)
+     (press :cross)
+     (menu-key-seq (battle-unit-cursor) 1 :battle-unit)
+     (press :cross)))
 
-  (if (can-attack?)
-    (do
-      (play-input
-       (press :cross))
-      (wait-until-active))
-    (do
-      (cancel)
-      (cancel)
-      (cancel))))
+   (play-input
+    (concat
+     (menu-key-seq (battle-attack-cursor)
+                   (get-skill-pos skill skills)
+                   :battle-attack
+                   (count skills))
+     (press :cross 4)))
+
+   (do-nothing 20)
+   (if (can-attack?)
+     (do
+       (play-input
+        (press :cross))
+       (wait-until-active)
+       (if (and (not (has-attacked?)) (> retries 0))
+         (recur target skill skills (- retries 1))))
+     (do
+       (cancel)
+       (cancel)
+       (cancel)))))
 
 (defn end-action []
   (select-active)

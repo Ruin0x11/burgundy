@@ -13,10 +13,11 @@
   :desc ["Ending action."]
   :priority 9999
   :max-attempts 1
-  :goal-state false
   ;;TODO: detect if changing units
+  :goal-state false
   :action (end-action)
-   )
+  :on-failure (dosync
+               (commute battle-state assoc-in [:attempted-skills] [])))
 
 (def-task intrusion-stage-task []
   :desc ["Confirming intrusion stage screen."]
@@ -83,11 +84,12 @@
                   (not (has-move-remaining?)))
   :action (let [attempted (:attempted-skills @battle-state)
                 skills (filter #(some #{(skill-id %)} attempted) (skills-reaching target))
-                id (select-skill target skills)]
-            (attack target id)
-            (println (skill-name id))
+                skill (select-skill target skills)]
+            (when-not (empty? skills)
+              (attack target skill (get-all-skills))
+              (println (skill-name skill)))
             (dosync
-             (commute battle-state assoc-in [:attempted-skills] (conj attempted id))))
+             (commute battle-state assoc-in [:attempted-skills] (conj attempted (skill-id skill)))))
   :on-failure (when (is-marona?)
                 (add-task (confine-near-task 0 target))))
 

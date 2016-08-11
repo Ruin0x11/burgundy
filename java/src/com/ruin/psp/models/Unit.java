@@ -71,6 +71,7 @@ public class Unit {
     private int maxRemove;
     private boolean hasAttacked;
     private boolean isVisible;
+    private boolean isOB;
 
     // if a unit is friendly, this points to the memory location of that unit's stats
     private int friendlyUnitOffset;
@@ -178,6 +179,8 @@ public class Unit {
         } else {
             this.isVisible = true;
         }
+
+        this.isOB = bb.get(0x184) == 1;
 
         this.statHP = bb.getInt(0xEC);
         this.statAtk = bb.getInt(0x594);
@@ -340,6 +343,14 @@ public class Unit {
 
     public List<Skill> getSkills() {
         return Collections.unmodifiableList(this.skills);
+    }
+
+
+    public boolean isOB() {
+        return isOB;
+    }
+    public boolean isVisible() {
+        return isVisible;
     }
 
     public boolean isDead() {

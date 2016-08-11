@@ -75,7 +75,10 @@ public class PSP {
 
         int summonedItems = summonedUnits - friendlyCharas;
 
-       return startingUnits + summonedItems;
+        System.out.println(startingUnits + " " + friendlyCharas + " " + summonedUnits);
+        System.out.println(startingUnits + summonedItems);
+
+       return startingUnits + summonedItems + 1;
     }
 
     public Unit getUnit(int unitID) {
@@ -383,7 +386,8 @@ public class PSP {
         neutralUnits.clear();
         itemUnits.clear();
         deadUnits.clear();
-        for(int i = 0; i < getUnitCount(); i++) {
+        int total = getUnitCount();
+        for(int i = 0; i < total; i++) {
             int offset = objectAddress + (i*objectSize);
             byte[] unitRam = readRam(offset, objectSize);
 
@@ -392,7 +396,6 @@ public class PSP {
             if(unitSentinel != 0x0000) {
                 Unit unit = new Unit(unitRam);
                 units.put(unit.getID(), unit);
-                System.out.println(unit.getName());
 
                 if(unit.isDead()) {
                     deadUnits.add(unit);
@@ -408,6 +411,11 @@ public class PSP {
                 }
                 else {
                     enemyUnits.add(unit);
+                }
+
+                // don't count OB units against total
+                if(unit.isOB()) {
+                    total++;
                 }
             }
         }
@@ -436,6 +444,7 @@ public class PSP {
         System.out.println("=== Dead Units ===");
         for(Unit cur : deadUnits) {
             System.out.println(cur.getName() + " [" + cur.getID() + "]");
+            System.out.println(cur.isVisible());
         }
         System.out.println();
     }
