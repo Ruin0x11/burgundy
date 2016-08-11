@@ -170,16 +170,7 @@ public class Unit {
             this.heldItemID = -1;
         }
 
-        if(this.isItem()) {
-            // 0x56c : item details pointer - 704 bytes
-
-            // 0x140 0x521 0x522
-            // TODO: do for characters
-            this.isVisible = bb.get(0x17F) == 1;
-
-        } else {
-            this.isVisible = true;
-        }
+        this.isVisible = bb.get(0x17F) == 1;
 
         this.isOB = bb.get(0x184) == 1;
 

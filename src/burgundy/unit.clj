@@ -287,7 +287,7 @@
         selected (selected-unit)
         cursor-units (units-under-cursor)]
     (if (or (nil? selected)
-            (not (some #{id} (map (get-id (units-under-cursor))))))
+            (not (some #{id} (map get-id (units-under-cursor)))))
       (do (move-towards target)
           (recur target))
 

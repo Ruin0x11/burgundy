@@ -66,25 +66,6 @@ public class PSP {
         return readRAMU16(0x0012F384);
     }
 
-    public static int getUnitCount() {
-        // the only way the number of units can change is by confining units that hold items
-        // so add the starting number of units to the number of items
-
-        // inital units when starting map, except marona and her item
-        int startingUnits = readRAMU16(0x0012F388);
-        // characters (not items) that are summoned (including marona)
-        int friendlyCharas = readRAMU16(0x0012F37C);
-        // characters and items that are summoned (including marona/her item)
-        int summonedUnits = getSummonedUnits();
-
-        int summonedItems = summonedUnits - friendlyCharas;
-
-        // System.out.println(startingUnits + " " + friendlyCharas + " " + summonedUnits);
-        // System.out.println(startingUnits + summonedItems);
-
-       return startingUnits + summonedItems + 1;
-    }
-
     public Unit getUnit(int unitID) {
         return units.get(unitID);
     }
@@ -390,15 +371,21 @@ public class PSP {
         neutralUnits.clear();
         itemUnits.clear();
         deadUnits.clear();
-        int total = getUnitCount();
+
+        int total = 127;
         for(int i = 0; i < total; i++) {
             int offset = objectAddress + (i*objectSize);
             byte[] unitRam = readRam(offset, objectSize);
 
-            // the unit exists if one of the two bytes at 0x844 are not 0
+            // the unit exists if one of the two bytes at 0x844 are not 0 and it is visible
             int unitSentinel = readRAMU16(offset + 0x844);
             if(unitSentinel != 0x0000) {
                 Unit unit = new Unit(unitRam);
+
+                if(!unit.isVisible()) {
+                    continue;
+                }
+
                 units.put(unit.getID(), unit);
 
                 if(unit.isDead()) {
@@ -415,11 +402,6 @@ public class PSP {
                 }
                 else {
                     enemyUnits.add(unit);
-                }
-
-                // don't count OB units against total
-                if(unit.isOB()) {
-                    total++;
                 }
             }
         }
