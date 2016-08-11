@@ -72,7 +72,7 @@
 
     (restart!)
     (PSP/setFramelimit false)
-    (load-state "tako")
+    (load-state "move")
     (step)
     (step)
     (gen-type-kw-maps)

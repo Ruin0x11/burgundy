@@ -75,8 +75,8 @@ public class PSP {
 
         int summonedItems = summonedUnits - friendlyCharas;
 
-        System.out.println(startingUnits + " " + friendlyCharas + " " + summonedUnits);
-        System.out.println(startingUnits + summonedItems);
+        // System.out.println(startingUnits + " " + friendlyCharas + " " + summonedUnits);
+        // System.out.println(startingUnits + summonedItems);
 
        return startingUnits + summonedItems + 1;
     }

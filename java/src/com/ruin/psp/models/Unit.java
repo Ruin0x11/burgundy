@@ -154,12 +154,6 @@ public class Unit {
                 this.spAffinity[i] = spAffinityDat;
             }
 
-            int itemOffset = bb.getInt(0x57c);
-            if(itemOffset != 0) {
-                this.heldItemID = PSP.readRAMU16((itemOffset - 0x8800000) + 0x842);
-            } else {
-                this.heldItemID = -1;
-            }
         }
         else {
             // get 27 bytes at 0x2B8
@@ -167,6 +161,13 @@ public class Unit {
             bb.position(0x2B8);
             bb.get(nameData);
             this.name = PSP.getStringAt(nameData);
+        }
+
+        int itemOffset = bb.getInt(0x57c);
+        if(itemOffset != 0) {
+            this.heldItemID = PSP.readRAMU16((itemOffset - 0x8800000) + 0x842);
+        } else {
+            this.heldItemID = -1;
         }
 
         if(this.isItem()) {

@@ -131,8 +131,8 @@
 
 (defn-unit get-all-skills [unit]
   (distinct-by skill-id (concat (get-usable-skills unit)
-                    (when (is-holding? unit)
-                      (get-usable-skills (get-held-unit unit))))))
+                                (when (is-holding? unit)
+                                  (get-usable-skills (get-held-unit unit))))))
 
 (defn get-skill-pos [skill skills]
   (let [skill-ids (map skill-id skills)
@@ -281,11 +281,19 @@
          [ax ay] (angle->analog angle scale)]
      (play-input [[[:analog ax ay] 1]]))))
 
-(defn move-to-unit [unit]
-  (when (or (nil? (selected-unit))
-            (not= (get-id (selected-unit)) (get-id unit)))
-    (move-towards unit)
-    (recur unit)))
+(defn move-to-unit [target]
+  (let [id (get-id target)
+        selected (selected-unit)]
+    (if (nil? selected)
+      (do (move-towards target)
+          (recur target))
+      (when-not (= (get-id selected) id)
+        (let [held (get-held-unit selected)]
+          (when (or (nil? held)
+                  (not= (get-id held) id))
+            (println (get-id held))
+            (move-towards target)
+            (recur target)))))))
 
 (defn select-unit-in-cursor
   "When there are multiple units near the cursor, cycles to the given one."
