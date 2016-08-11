@@ -80,8 +80,7 @@
   :desc ["Attacking " (get-name target)]
   :priority 20
   :max-attempts 3
-  :goal-state (or (has-attacked?)
-                  (not (has-move-remaining?)))
+  :goal-state (has-attacked?)
   :action (let [attempted (:attempted-skills @battle-state)
                 skills (remove #(some #{(skill-id %)} attempted) (skills-reaching target))
                 skill (select-skill target skills)]

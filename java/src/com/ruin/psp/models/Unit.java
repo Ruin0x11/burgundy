@@ -29,7 +29,8 @@ public class Unit {
     }
 
     private int id;
-    private int heldItemID;
+    private int heldID;
+    private int holdingID;
 
     private float x;
     private float y;
@@ -83,6 +84,11 @@ public class Unit {
         bb.order(ByteOrder.LITTLE_ENDIAN);
 
         this.data = data;
+
+        this.isVisible = bb.get(0x17F) == 1;
+        if(!this.isVisible) {
+            return;
+        }
 
         this.id = bb.getShort(0x842);
 
@@ -165,9 +171,9 @@ public class Unit {
 
         int itemOffset = bb.getInt(0x57c);
         if(itemOffset != 0) {
-            this.heldItemID = PSP.readRAMU16((itemOffset - 0x8800000) + 0x842);
+            this.heldID = PSP.readRAMU16((itemOffset - 0x8800000) + 0x842);
         } else {
-            this.heldItemID = -1;
+            this.heldID = -1;
         }
 
         this.isVisible = bb.get(0x17F) == 1;
@@ -294,7 +300,7 @@ public class Unit {
     }
 
     public int getHeldItemID() {
-        return heldItemID;
+        return heldID;
     }
 
     public boolean isItem() {
@@ -346,7 +352,7 @@ public class Unit {
     }
 
     public boolean isDead() {
-        return (currentHP == 0) || (!isVisible);
+        return currentHP == 0;
     }
 
     public void dump() {

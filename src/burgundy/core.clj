@@ -72,7 +72,7 @@
 
     (restart!)
     (PSP/setFramelimit false)
-    (load-state "no-active")
+    (load-state "isle")
     (step)
     (step)
     (gen-type-kw-maps)

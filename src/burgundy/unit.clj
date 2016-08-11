@@ -222,6 +222,8 @@
          pz (+ z (* distance (Math/sin rad)))]
      [px pz])))
 
+(defn unit-by-name [name]
+  (first (filter #(= name (get-name %)) (units))))
 
 (defn-unit closest [unit coll]
   (when (and unit (seq coll))
@@ -257,7 +259,7 @@
 
 (def selection-dist 0.5)
 
-(def camera-angle 225)
+(def camera-angle 180)
 
 (defn move-to
   ([unit] (move-to unit selection-dist))
@@ -267,7 +269,8 @@
    (let [comparator (if (= dir :away) < >)
          angle-fn (if (= dir :away) angle-away angle-to)]
      (while (comparator (dist-unit unit) within)
-       (let [angle (mod (+ (angle-fn unit) camera-angle) 360)
+       (let [cam (+ 180 (camera-rot))
+             angle (mod (+ (angle-fn unit) cam) 360)
              scale (if (comparator (dist-unit unit) (+ 5.0 within)) 1.0 0.75)
              [ax ay] (angle->analog angle scale)]
          (play-input [[[:analog ax ay] 1]])
@@ -277,37 +280,54 @@
   ([unit] (let [[x _ z] (get-pos unit)]
             (move-towards x z)))
   ([x z]
-   (let [angle (mod (+ (angle-to x z (player-x) (player-z)) camera-angle) 360)
+   (let [cam (+ 180 (camera-rot))
+         angle (mod (+ (angle-to x z (player-x) (player-z)) cam) 360)
          scale (if (> (dist x z (player-x) (player-z)) 5) 1.0 0.75)
          [ax ay] (angle->analog angle scale)]
      (play-input [[[:analog ax ay] 1]]))))
 
-(defn move-to-unit [target]
+(defn in?
+  "true if coll contains elm"
+  [coll elm]
+  (some #(= elm %) coll))
+
+(defn move-to-unit
+  "Moves the cursor to the unit, accounting for stacked units and units that are held."
+  [target]
+  (move-towards target)
   (let [id (get-id target)
         selected (selected-unit)
         cursor-units (units-under-cursor)]
-    (if (or (nil? selected)
-            (not (some #{id} (map get-id (units-under-cursor)))))
-      (do (move-towards target)
-          (recur target))
+    (if (nil? selected)
+      (recur target)
+      (when (and (not= (get-id selected) id)
+                 (not (in? (map get-id cursor-units) id)))
+        (println "not in selected or nearby")
+        (let [held (get-held-unit selected)
+              cursor-held-ids (map (comp get-id get-held-unit) cursor-units)]
+          (println id (map get-id cursor-units) (get-id selected) cursor-held-ids)
+          (when-not (nil? held)
+            (println (get-id held)))
+          (when (and (or (nil? held)
+                         (not= (get-id held) id))
+                     (not (in? cursor-held-ids id)))
 
-      (when-not (= (get-id selected) id)
-        (let [held (get-held-unit selected)]
-          (when (or (nil? held)
-                    (not= (get-id held) id)
-                    (not (some #{id} (map (comp get-id get-held-unit) (units-under-cursor)))))
-            (move-towards target)
-            (recur target)))))))
+            (do (println "not in cursor held or held")
+                (recur target))))))))
 
 (defn select-unit-in-cursor
   "When there are multiple units near the cursor, cycles to the given one."
   [unit]
   (when (selected-unit)
     (let [cursor-units (units-under-cursor)
+          cursor-held-units (map get-held-unit cursor-units)
           current (selected-unit-index)
+          id (get-id unit)
           ;; by id, not exact copy
           ;; TODO: should this be the default?
-          target (.indexOf (map get-id cursor-units) (get-id unit))
+          cursor-pos (.indexOf (map get-id cursor-units) id)
+          held-pos (.indexOf (map get-id cursor-held-units) id)
+          target (if (= -1 cursor-pos) held-pos cursor-pos)
           presses
           (cond
             (= target -1)      0

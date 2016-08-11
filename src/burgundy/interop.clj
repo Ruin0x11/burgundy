@@ -267,6 +267,8 @@
         y (Math/sin rad)]
     (+ x y)))
 
+(defn camera-rot [] (rad->deg (PSP/getCameraRot)))
+
 (defn is-active?
   "Returns true if the cursor can be moved on the map.
 

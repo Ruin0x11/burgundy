@@ -190,6 +190,10 @@ public class PSP {
         return readRAMU32Float(0x0012E8A4);
     }
 
+    public static float getCameraRot() {
+        return readRAMU32Float(0x0012E8CC);
+    }
+
     public static int getSummonedItems() {
         int friendlyCharas = readRAMU16(0x0012F37C);
         int summonedUnits = getSummonedUnits();
@@ -377,32 +381,28 @@ public class PSP {
             int offset = objectAddress + (i*objectSize);
             byte[] unitRam = readRam(offset, objectSize);
 
-            // the unit exists if one of the two bytes at 0x844 are not 0 and it is visible
-            int unitSentinel = readRAMU16(offset + 0x844);
-            if(unitSentinel != 0x0000) {
-                Unit unit = new Unit(unitRam);
+            Unit unit = new Unit(unitRam);
 
-                if(!unit.isVisible()) {
-                    continue;
-                }
+            if(!unit.isVisible()) {
+                continue;
+            }
 
-                units.put(unit.getID(), unit);
+            units.put(unit.getID(), unit);
 
-                if(unit.isDead()) {
-                    deadUnits.add(unit);
-                }
-                else if(unit.isNeutral()) {
-                    neutralUnits.add(unit);
-                }
-                else if(unit.isItem()) {
-                    itemUnits.add(unit);
-                }
-                else if(unit.isFriendly()) {
-                    friendlyUnits.add(unit);
-                }
-                else {
-                    enemyUnits.add(unit);
-                }
+            if(unit.isDead()) {
+                deadUnits.add(unit);
+            }
+            else if(unit.isNeutral()) {
+                neutralUnits.add(unit);
+            }
+            else if(unit.isItem()) {
+                itemUnits.add(unit);
+            }
+            else if(unit.isFriendly()) {
+                friendlyUnits.add(unit);
+            }
+            else {
+                enemyUnits.add(unit);
             }
         }
     }
