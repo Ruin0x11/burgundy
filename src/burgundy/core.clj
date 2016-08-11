@@ -2,6 +2,7 @@
   (:require [burgundy.interop :refer :all]
             [burgundy.menu :refer :all]
             [burgundy.battle :refer :all]
+            [burgundy.queue :refer [cmd]]
             [burgundy.repl :refer :all])
   (:import com.ruin.psp.PSP)
   (:import java.io.File))
@@ -20,9 +21,14 @@
   ([start] (snoop-range start 4 8))
   ([start byte-offset count]
    (let [addresses (take count (range start (+ (* byte-offset count) start) byte-offset))]
-     (doseq-indexed i [addr addresses]
-                    (printf "0x%8X (+%04X): %08X %d %.6f\n" addr (* byte-offset i) (PSP/readRAMU32 addr) (PSP/readRAMU16 addr) (PSP/readRAMU32Float addr)))
-     (println))))
+     (clojure.string/join (map-indexed (fn [i addr]
+                          (format "0x%08X (+%04X): %08X %d %.6f\n" addr (* byte-offset i)
+                                  (PSP/readRAMU32 addr) (PSP/readRAMU16 addr) (PSP/readRAMU32Float addr))) addresses))
+     )))
+
+(defn snoop
+  ([start] (snoop start 4 8))
+  ([start byte-offset count] (println (cmd (snoop-range start byte-offset count)))))
 
 (defn run-once []
   (save-state "temp")
@@ -66,7 +72,7 @@
 
     (restart!)
     (PSP/setFramelimit false)
-    (load-state "trolly")
+    (load-state "ash")
     (step)
     (step)
     (gen-type-kw-maps)

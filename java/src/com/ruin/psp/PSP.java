@@ -66,6 +66,18 @@ public class PSP {
         return readRAMU16(0x0012F384);
     }
 
+    public static int getUnitCount() {
+        // the only way the number of units can change is by confining units that hold items
+        // so add the starting number of units to the number of items
+        int startingUnits = readRAMU16(0x0014AC74);
+        int friendlyCharas = readRAMU16(0x0012F37C);
+        int summonedUnits = getSummonedUnits();
+
+        int summonedItems = summonedUnits - friendlyCharas;
+
+       return startingUnits + summonedItems;
+    }
+
     public Unit getUnit(int unitID) {
         return units.get(unitID);
     }
@@ -190,12 +202,14 @@ public class PSP {
         return readRAMU32Float(0x0012E8A4);
     }
 
-    public static int getTotalUnits() {
+    public static int getSummonedItems() {
         int friendlyCharas = readRAMU16(0x0012F37C);
         int summonedUnits = getSummonedUnits();
-        int otherUnits = readRAMU16(0x0012F388);
+
+        int summonedItems = summonedUnits - friendlyCharas;
+
         // including marona
-        return (summonedUnits - friendlyCharas) + otherUnits + 1;
+        return summonedUnits - friendlyCharas + 1;
     }
 
     public static int getIslandMenuCursorPos() {
@@ -369,8 +383,7 @@ public class PSP {
         neutralUnits.clear();
         itemUnits.clear();
         deadUnits.clear();
-        int total = getTotalUnits();
-        for(int i = 0; i < total; i++) {
+        for(int i = 0; i < getUnitCount(); i++) {
             int offset = objectAddress + (i*objectSize);
             byte[] unitRam = readRam(offset, objectSize);
 
@@ -379,17 +392,19 @@ public class PSP {
             if(unitSentinel != 0x0000) {
                 Unit unit = new Unit(unitRam);
                 units.put(unit.getID(), unit);
+                System.out.println(unit.getName());
+
                 if(unit.isDead()) {
                     deadUnits.add(unit);
+                }
+                else if(unit.isNeutral()) {
+                    neutralUnits.add(unit);
                 }
                 else if(unit.isItem()) {
                     itemUnits.add(unit);
                 }
                 else if(unit.isFriendly()) {
                     friendlyUnits.add(unit);
-                }
-                else if(unit.isNeutral()) {
-                    neutralUnits.add(unit);
                 }
                 else {
                     enemyUnits.add(unit);

@@ -68,6 +68,7 @@ public class Unit {
     private float remainingMove;
     private int jump;
     private int remove;
+    private int maxRemove;
     private boolean hasAttacked;
     private boolean isVisible;
 
@@ -155,7 +156,6 @@ public class Unit {
             int itemOffset = bb.getInt(0x57c);
             if(itemOffset != 0) {
                 this.heldItemID = PSP.readRAMU16((itemOffset - 0x8800000) + 0x842);
-                // System.out.println("Held item is: " + this.heldItemID);
             } else {
                 this.heldItemID = -1;
             }
@@ -171,9 +171,12 @@ public class Unit {
         if(this.isItem()) {
             // 0x56c : item details pointer - 704 bytes
 
-            // inside:
-            // 0xfa : 32 slots for 8-byte skills - 256 bytes
-            // u2 level, u4 exp, u2 identifier
+            // 0x140 0x521 0x522
+            // TODO: do for characters
+            this.isVisible = bb.get(0x17F) == 1;
+
+        } else {
+            this.isVisible = true;
         }
 
         this.statHP = bb.getInt(0xEC);
@@ -188,11 +191,9 @@ public class Unit {
         this.jump = bb.getInt(0x81a);
         this.maxMove = bb.getFloat(0x600);
         this.remainingMove = bb.getFloat(0x604);
+        this.remove = bb.getShort(0x5B2);
 
         this.hasAttacked = bb.getInt(0x848) == 1;
-
-        // 0x140 0x521 0x522
-        this.isVisible = this.isItem && bb.get(0x17F) == 1;
 
         float rotation = bb.getFloat(0x15C);
     }
@@ -273,6 +274,10 @@ public class Unit {
         return jump;
     }
 
+    public int getRemove() {
+        return remove;
+    }
+
     public int getMana() {
         return mana;
     }
@@ -301,6 +306,13 @@ public class Unit {
         return isItem;
     }
 
+    /**
+     * True if the unit is an item or has remove remaining.
+     */
+    public boolean hasConfineTarget() {
+        return isItem() || getRemove() > 0;
+    }
+
     public boolean isBeingHeld() {
         return isBeingHeld;
     }
@@ -319,6 +331,11 @@ public class Unit {
 
     public boolean isNeutral() {
         return this.team == TEAM_NEUTRAL;
+    }
+
+    public boolean isMarona() {
+        // TODO: is this a flag?
+        return this.name.equals("Marona");
     }
 
     public List<Skill> getSkills() {
