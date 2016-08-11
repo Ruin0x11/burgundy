@@ -60,6 +60,8 @@
 
 (defn-unit has-attacked? [unit] (.hasAttacked unit))
 
+(defn-unit is-item? [unit] (.isItem unit))
+
 (defn-unit is-holding? [unit] (not (nil? (get-held-unit unit))))
 (defn-unit is-being-held? [unit] (.isBeingHeld unit))
 
@@ -90,15 +92,47 @@
 
 (defn-unit get-usable-skills [unit]
   (let [skills (get-skills unit)
-        actives (remove passive-skill? skills)]
+        actives (remove passive-skill? skills)
+        holding? (is-holding? unit)
+        being-held? (is-being-held? unit)
+        held-chara? (and (not (is-item? unit))
+                         being-held?)
+        ]
     (as-> actives s
-      (if (is-being-held? unit) s (remove combo-skill? s))
-      (if (is-holding? unit) (remove unarmed-skill? s) (remove armed-skill? s)))))
+      (if held-chara? s (remove combo-skill? s))
+      (if (or holding? being-held?) (remove unarmed-skill? s) (remove armed-skill? s)))))
+
+(defn distinct-by
+  "Returns a lazy sequence of the elements of coll, removing any elements that
+  return duplicate values when passed to a function f."
+  ([f]
+   (fn [rf]
+     (let [seen (volatile! #{})]
+       (fn
+         ([] (rf))
+         ([result] (rf result))
+         ([result x]
+          (let [fx (f x)]
+            (if (contains? @seen fx)
+              result
+              (do (vswap! seen conj fx)
+                  (rf result x)))))))))
+  ([f coll]
+   (let [step (fn step [xs seen]
+                (lazy-seq
+                 ((fn [[x :as xs] seen]
+                    (when-let [s (seq xs)]
+                      (let [fx (f x)]
+                        (if (contains? seen fx)
+                          (recur (rest s) seen)
+                          (cons x (step (rest s) (conj seen fx)))))))
+                  xs seen)))]
+     (step coll #{}))))
 
 (defn-unit get-all-skills [unit]
-  (concat (get-usable-skills unit)
-          (when (is-holding? unit)
-            (get-usable-skills (get-held-unit unit)))))
+  (distinct-by skill-id (concat (get-usable-skills unit)
+                    (when (is-holding? unit)
+                      (get-usable-skills (get-held-unit unit))))))
 
 (defn get-skill-pos [skills skill]
   (let [skill-ids (map skill-id skills)

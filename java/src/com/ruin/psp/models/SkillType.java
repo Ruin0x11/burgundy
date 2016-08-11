@@ -54,7 +54,7 @@ public class SkillType {
 
         byte[] stringData = Arrays.copyOfRange(data, 0x08, 0x08 + 16);
         this.name = PSP.getStringAt(stringData);
-        stringData = Arrays.copyOfRange(data, 0x1A, 0x1A + 32);
+        stringData = Arrays.copyOfRange(data, 0x1D, 0x1D + 32);
         // there are some special characters that need to be stripped
         this.desc = PSP.getStringAt(stringData);
 
@@ -80,7 +80,7 @@ public class SkillType {
             this.equipType = EquipType.UNARMED.getID();
         } else if(equipTypeData == 0) {
             this.equipType = EquipType.PASSIVE.getID();
-        } else if(equipTypeData == 31 || equipTypeData == 15) {
+        } else if(equipTypeData == 15) {
             this.equipType = EquipType.ARMED.getID();
         } else {
             this.equipType = EquipType.ANY.getID();
