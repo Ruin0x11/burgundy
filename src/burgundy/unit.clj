@@ -35,7 +35,7 @@
 
 (defn-unit get-name [unit] (.getName unit))
 
-(defn-unit get-id [unit] (.getID unit))
+(defn-unit get-id [unit] (if unit (.getID unit) -1))
 
 (defn-unit get-mana [unit] (.getMana unit))
 
@@ -252,6 +252,7 @@
 
 (defn can-enter-input? []
   (and (is-active?)
+       (not (nil? (active-unit)))
        (not (is-in-air?))))
 
 (def selection-dist 0.5)
@@ -283,15 +284,18 @@
 
 (defn move-to-unit [target]
   (let [id (get-id target)
-        selected (selected-unit)]
-    (if (nil? selected)
+        selected (selected-unit)
+        cursor-units (units-under-cursor)]
+    (if (or (nil? selected)
+            (not (some #{id} (map (get-id (units-under-cursor))))))
       (do (move-towards target)
           (recur target))
+
       (when-not (= (get-id selected) id)
         (let [held (get-held-unit selected)]
           (when (or (nil? held)
-                  (not= (get-id held) id))
-            (println (get-id held))
+                    (not= (get-id held) id)
+                    (not (some #{id} (map (comp get-id get-held-unit) (units-under-cursor)))))
             (move-towards target)
             (recur target)))))))
 

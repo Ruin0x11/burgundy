@@ -150,8 +150,7 @@
     (look-for-walkable (active-unit))))
 
 (defn select-skill [target skills]
-  (let [unit (active-unit)
-        skills (skills-reaching target)]
+  (let [unit (active-unit)]
     (if (empty? skills)
       0
       (apply min-key skill-sp-cost skills))))

@@ -83,13 +83,15 @@
   :goal-state (or (has-attacked?)
                   (not (has-move-remaining?)))
   :action (let [attempted (:attempted-skills @battle-state)
-                skills (filter #(some #{(skill-id %)} attempted) (skills-reaching target))
+                skills (remove #(some #{(skill-id %)} attempted) (skills-reaching target))
                 skill (select-skill target skills)]
+            (println attempted)
+            (println (map skill-id skills))
             (when-not (empty? skills)
               (attack target skill (get-all-skills))
-              (println (skill-name skill)))
-            (dosync
-             (commute battle-state assoc-in [:attempted-skills] (conj attempted (skill-id skill)))))
+              (println (skill-name skill))
+              (dosync
+               (commute battle-state assoc-in [:attempted-skills] (conj attempted (skill-id skill))))))
   :on-failure (when (is-marona?)
                 (add-task (confine-near-task 0 target))))
 

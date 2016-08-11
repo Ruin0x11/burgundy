@@ -69,8 +69,12 @@ public class PSP {
     public static int getUnitCount() {
         // the only way the number of units can change is by confining units that hold items
         // so add the starting number of units to the number of items
-        int startingUnits = readRAMU16(0x0014AC74);
+
+        // inital units when starting map, except marona and her item
+        int startingUnits = readRAMU16(0x0012F388);
+        // characters (not items) that are summoned (including marona)
         int friendlyCharas = readRAMU16(0x0012F37C);
+        // characters and items that are summoned (including marona/her item)
         int summonedUnits = getSummonedUnits();
 
         int summonedItems = summonedUnits - friendlyCharas;
