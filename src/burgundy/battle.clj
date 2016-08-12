@@ -30,6 +30,7 @@
   :priority 1
   :goal-state (not (stage-started?))
   :action (do (start-stage)
+              (.loadSkillTypes api)
               (dosync
                (commute battle-state assoc-in [:summoned-units] (summoned-units))
                (commute battle-state assoc-in [:attempted-skills] [])
@@ -83,7 +84,7 @@
   :goal-state (has-attacked?)
   :action (let [attempted (:attempted-skills @battle-state)
                 skills (remove #(some #{(skill-id %)} attempted) (skills-reaching target))
-                skill (select-skill target skills)]
+                skill (skill-pos-for-target target skills)]
             (println attempted)
             (println (map skill-id skills))
             (when-not (empty? skills)

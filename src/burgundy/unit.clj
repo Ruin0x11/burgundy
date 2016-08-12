@@ -62,10 +62,10 @@
 
 (defn-unit is-item? [unit] (.isItem unit))
 
-(defn-unit is-holding? [unit] (not (nil? (get-held-unit unit))))
-(defn-unit is-being-held? [unit] (.isBeingHeld unit))
+(defn-unit holding? [unit] (not (nil? (get-held-unit unit))))
+(defn-unit being-held? [unit] (.isBeingHeld unit))
 
-(defn-unit is-friendly? [unit] (.isFriendly unit))
+(defn-unit my-unit? [unit] (.isFriendly unit))
 
 (defn-unit is-marona? [unit] (= (get-name unit) "Marona"))
 
@@ -93,8 +93,8 @@
 (defn-unit get-usable-skills [unit]
   (let [skills (get-skills unit)
         actives (remove passive-skill? skills)
-        holding? (is-holding? unit)
-        being-held? (is-being-held? unit)
+        holding? (holding? unit)
+        being-held? (being-held? unit)
         held-chara? (and (not (is-item? unit))
                          being-held?)
         ]
@@ -131,7 +131,7 @@
 
 (defn-unit get-all-skills [unit]
   (distinct-by skill-id (concat (get-usable-skills unit)
-                                (when (is-holding? unit)
+                                (when (holding? unit)
                                   (get-usable-skills (get-held-unit unit))))))
 
 (defn get-skill-pos [skill skills]
@@ -184,6 +184,16 @@
              (partial can-use-skill? sp)
              (partial should-use-skill? unit))
             skills)))
+
+(defn in?
+  "true if coll contains elm"
+  [coll elm]
+  (some #(= elm %) coll))
+
+(defn-unit has-skill? [unit skill-kw]
+  (let [skill-ids (map skill-id (get-all-skills unit))
+        id (skill-kw skill-type-ids)]
+    (in? skill-ids id)))
 
 (defn-unit skills-reaching [unit target]
   (let [skills (usable-skills unit)]
@@ -247,7 +257,7 @@
 
 (defn-unit confine-targets [unit]
   (let [nearby-items (units-nearby unit confine-radius [confine-upper confine-lower] (item-units))]
-    (set (remove is-being-held? nearby-items))))
+    (set (remove being-held? nearby-items))))
 
 (defn-unit too-close? [unit target]
   (< (dist-unit unit target) 2.0))
@@ -286,20 +296,22 @@
          [ax ay] (angle->analog angle scale)]
      (play-input [[[:analog ax ay] 1]]))))
 
-(defn in?
-  "true if coll contains elm"
-  [coll elm]
-  (some #(= elm %) coll))
+(defn move-to-point
+  ([x z] (move-to-point x z 1.0))
+  ([x z within]
+   (when-not (< (dist x z) within)
+     (move-towards x z)
+     (recur x z within))))
 
 (defn move-to-unit
   "Moves the cursor to the unit, accounting for stacked units and units that are held."
-  [target]
+  [target & [type]]
   (move-towards target)
   (let [id (get-id target)
-        selected (selected-unit)
+        selected (if (= type :island) (selected-unit-island) (selected-unit))
         cursor-units (units-under-cursor)]
     (if (nil? selected)
-      (recur target)
+      (recur target [type])
       (when (and (not= (get-id selected) id)
                  (not (in? (map get-id cursor-units) id)))
         (println "not in selected or nearby")
@@ -313,7 +325,7 @@
                      (not (in? cursor-held-ids id)))
 
             (do (println "not in cursor held or held")
-                (recur target))))))))
+                (recur target [type]))))))))
 
 (defn select-unit-in-cursor
   "When there are multiple units near the cursor, cycles to the given one."

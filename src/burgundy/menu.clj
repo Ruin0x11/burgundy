@@ -12,6 +12,7 @@
   {:attack 999
    :battle-unit 6 ;; plus one if marona
    :battle-main 4
+   :marona 5
    :confine 999
    :status 999})
 
@@ -89,25 +90,17 @@
       (cancel)))
   (select-unit-in-cursor (active-unit)))
 
-(defn look-for-walkable
-  "Moves the cursor towards the unit until it finds a piece of terrain it can walk towards, then moves there.
-
-  Only to be called at the move menu."
-  [unit]
-  (if (> (dist-unit unit) 1.0)
-    (if (can-move?)
-      (do
-        (play-input [:cross])
-        (wait-until-active))
-      (let [angle (mod (+ (angle-to unit) 225) 360)
-            [ax ay] (angle->analog angle 1.0)]
-        (println [ax ay])
-        (play-input [[[:analog ax ay] 1]])
-        (recur unit)))
-    (do
-      (cancel)
-      (cancel)
-      )))
+(defn find-actionable
+  "Moves the cursor towards a unit until a condition is satisfied."
+  ([unit] (find-actionable unit can-move?))
+  ([unit condition]
+   (if (> (dist-unit unit) 1.0)
+     (when-not (condition)
+       (move-towards unit)
+       (recur unit condition))
+     (do
+       (cancel)
+       (cancel)))))
 
 (defn move-unit [target dist & [dir]]
   (let [angle 90
@@ -120,12 +113,9 @@
 
     (move-to target 10.0 dir)
 
-    (if (can-move?)
-      (do
-        (play-input [:cross 20])
-        (wait-until-active))
-      ;; TODO: fix.
-      (look-for-walkable (active-unit)))))
+    (find-actionable (active-unit))
+    (play-input [:cross 20])
+    (wait-until-active)))
 
 (defn move-unit-quick
   [unit target dist & [dir]]
@@ -137,17 +127,29 @@
     [:cross 20]
     (menu-key-seq (battle-unit-cursor) 0 :battle-unit)))
 
-  (if (can-move?)
-    (do
-      (play-input [:cross 20])
-      (wait-until-active))
-    (look-for-walkable (active-unit))))
+  (find-actionable (active-unit))
+  (play-input [:cross 20])
+  (wait-until-active))
 
-(defn select-skill [target skills]
+(defn skill-pos-for-target [target skills]
   (let [unit (active-unit)]
     (if (empty? skills)
       0
       (apply min-key skill-sp-cost skills))))
+
+(defn select-skill [skill skills]
+  (play-input
+   [[:wait 10]
+    [:cross]
+    (menu-key-seq (battle-unit-cursor) 1 :battle-unit)
+    [:cross]])
+
+  (play-input
+   [(menu-key-seq (battle-attack-cursor)
+                  (get-skill-pos skill skills)
+                  :battle-attack
+                  (count skills))
+    [:cross 4]]))
 
 (defn attack
   ([target skill skills] (attack target skill skills 3))
@@ -164,18 +166,7 @@
        (move-unit target (skill-range skill))
        (select-unit target)))
 
-   (play-input
-    [:wait 10]
-    [:cross]
-    (menu-key-seq (battle-unit-cursor) 1 :battle-unit)
-    [:cross])
-
-   (play-input
-    [(menu-key-seq (battle-attack-cursor)
-                   (get-skill-pos skill skills)
-                   :battle-attack
-                   (count skills))
-     [:cross 4]])
+   (select-skill skill skills)
 
    (wait 20)
    (if (can-attack?)
@@ -188,6 +179,15 @@
        (cancel)
        (cancel)
        (cancel)))))
+
+(defn return []
+  (let [skills (get-all-skills)]
+    (if (has-skill? :return)
+      (do
+        (select-skill (:return skill-type-ids) skills)
+        (play-input [↑ ×])
+        (wait 50))
+      (println "Um, I don't have Return. This is kinda bad..."))))
 
 (defn end-action []
   (select-active)

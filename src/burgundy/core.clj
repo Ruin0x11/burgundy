@@ -84,9 +84,12 @@
 
     (restart!)
     (PSP/setFramelimit false)
-    (load-state "dungeon")
     (step)
     (step)
+    (load-state "return")
+    (step)
+    (step)
+    (.loadSkillTypes api)
     (gen-type-kw-maps)
     (continue!)
     (shutdown!)))

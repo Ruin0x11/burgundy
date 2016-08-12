@@ -88,7 +88,7 @@ public class SkillType {
     }
 
     public int getID() {
-        return id;
+        return (int) id & 0xFFFF;
     }
 
     public String getName() {
@@ -99,40 +99,40 @@ public class SkillType {
         return desc;
     }
 
-    public byte getPower() {
-        return power;
+    public int getPower() {
+        return (int) power & 0xFF;
     }
 
-    public byte getSpType() {
-        return spType;
+    public int getSpType() {
+        return (int) spType & 0xFF;
     }
 
-    public byte getAttackType() {
-        return attackType;
+    public int getAttackType() {
+        return (int) attackType & 0xFF;
     }
 
-    public byte getShape() {
-        return shape;
+    public int getShape() {
+        return (int) shape & 0xFF;
     }
 
-    public byte getRange() {
-        return range;
+    public int getRange() {
+        return (int) range & 0xFF;
     }
 
-    public byte getRadius() {
-        return radius;
+    public int getRadius() {
+        return (int) radius & 0xFF;
     }
 
-    public byte getLimitUpper() {
-        return limitUpper;
+    public int getLimitUpper() {
+        return (int) limitUpper & 0xFF;
     }
 
-    public byte getLimitLower() {
-        return limitLower;
+    public int getLimitLower() {
+        return (int) limitLower & 0xFF;
     }
 
-    public short getSpCost() {
-        return spCost;
+    public int getSpCost() {
+        return (int) spCost & 0xFFFF;
     }
 
     public int getManaCost() {

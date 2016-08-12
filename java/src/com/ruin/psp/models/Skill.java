@@ -17,15 +17,15 @@ public class Skill {
         this.exp = bb.getShort(0x4);
     }
 
-    public short getID() {
-        return id;
+    public int getID() {
+        return (int) id & 0xFFFF;
     }
 
-    public byte getLevel() {
-        return level;
+    public int getLevel() {
+        return (int) level & 0xFF;
     }
 
-    public short getExp() {
-        return exp;
+    public int getExp() {
+        return (int) exp & 0xFFFF;
     }
 }

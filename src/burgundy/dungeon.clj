@@ -71,6 +71,8 @@
    0x01 :item
    0x02 :item-variable})
 
+(def max-dungeons 32)
+
 (defn dungeon-enemy-type [dungeon]
   (get dungeon-enemy-types (.getEnemyType dungeon)))
 
@@ -94,9 +96,9 @@
   {:level [0 9999] :floors [0 99] :ground-type :normal :prohibition :normal})
 
 (def perfect-title-dungeon
-  (merge base-dungeon
-         {:exp 11
-          :bonus 11}))
+  {:prohibition :normal
+   :exp 11
+   :bonus 11})
 
 (def leveling-dungeon
   (merge base-dungeon
@@ -111,9 +113,12 @@
       (<= min result max))
     (= val-or-range result)))
 
-(defn create-dungeon [options-map]
-  (let [options (merge base-dungeon options-map)
-        gen (dungeon-info (generated-dungeon))
+(defn search-for-dungeon
+  "Keep regenerating dungeons until one with the desired properties is obtained, then create it.
+   The properties can be a single value or a range of values."
+  [options]
+  (println (.getName (generated-dungeon)))
+  (let [gen (dungeon-info (generated-dungeon))
         ;; only compare the keys that are found in the options
         considering (select-keys gen (keys options))
         found? (every? true? (map check-prop (vals options) (vals considering)))]
@@ -123,5 +128,5 @@
       (do
         (println "next")
         (play-input [Ｒ])
-        (recur options-map))
+        (recur options))
       (play-input [×]))))

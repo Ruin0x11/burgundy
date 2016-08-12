@@ -165,6 +165,11 @@ public class PSP {
         return readRAMU16(0x0012e964) == 0x12;
     }
 
+    public static boolean canThrow() {
+        // 0x1E if not
+        return readRAMU16(0x0012e964) == 0x14;
+    }
+
     /**
      * When selecting a confine target, returns true if it can be confined to.
      * Intended to have no effect elsewhere.
@@ -216,22 +221,33 @@ public class PSP {
         return readRAMU16(0x001BC0A8);
     }
 
-    public static int getBattleAttackMenuCursorPos() {
-        int cursorPos = readRAMU16(0x0014AC94);
-        int pageScroll = readRAMU16(0x0014AC98);
+    private static int getCursorPos(int cursorAddr, int pageAddr) {
+        int cursorPos = readRAMU16(cursorAddr);
+        int pageScroll = readRAMU16(pageAddr);
         return cursorPos + pageScroll;
+    }
+
+    public static int getBattleAttackMenuCursorPos() {
+        return getCursorPos(0x0014AC94, 0x0014AC98);
     }
 
     public static int getStatusMenuCursorPos() {
-        int cursorPos = readRAMU16(0x0011E65C);
-        int pageScroll = readRAMU16(0x0011E660);
-        return cursorPos + pageScroll;
+        return getCursorPos(0x0011E65C, 0x0011E660);
     }
 
     public static int getConfineMenuCursorPos() {
-        int cursorPos = readRAMU16(0x0011CA28);
-        int pageScroll = readRAMU16(0x0011CA2C);
-        return cursorPos + pageScroll;
+        return getCursorPos(0x0011CA28, 0x0011CA2C);
+    }
+
+    /**
+     * The cursor position for all of Marona's actions on Phantom Isle.
+     */
+    public static int getMaronaMenuCursorPos() {
+        return getCursorPos(0x0012DE8C, 0x0012DE90);
+    }
+
+    public static int getDungeonMenuCursorPos() {
+        return getCursorPos(0x0012DE9C, 0x0012DEA0);
     }
 
     public static long getBol() {
@@ -285,6 +301,10 @@ public class PSP {
         return readRAMU16(0x0012F498);
     }
 
+    public int getSelectedUnitIndexIsland() {
+        return readRAMU16(0x00128580);
+    }
+
     public Unit getSelectedUnit() {
         List<Unit> cursorUnits = getUnitsUnderCursor();
         int index = getSelectedUnitIndex();
@@ -292,6 +312,14 @@ public class PSP {
             return null;
         }
         return cursorUnits.get(index);
+    }
+
+    public Unit getSelectedUnitIsland() {
+        int index = getSelectedUnitIndexIsland();
+        if(index >= units.size()) {
+            return null;
+        }
+        return units.get(index);
     }
 
     private HashMap<Integer, Unit> units = new HashMap<Integer, Unit>();
@@ -386,10 +414,9 @@ public class PSP {
     boolean typesLoaded = false;
 
     public void onUpdate() {
-        if (!typesLoaded) {
-            loadSkillTypes();
-            typesLoaded = true;
-        }
+        // if (!typesLoaded) {
+        //     typesLoaded = true;
+        // }
         units.clear();
         friendlyUnits.clear();
         enemyUnits.clear();

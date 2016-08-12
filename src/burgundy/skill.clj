@@ -117,6 +117,7 @@
 
 (defn skill-equip-type [skill-or-id]
   (let [skill (get-skill-type skill-or-id)]
+    (println skill-or-id)
     (get skill-equip-types (.getEquipType skill))))
 
 ;; skill equip type predicates (armed-skill?)

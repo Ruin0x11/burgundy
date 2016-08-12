@@ -80,6 +80,7 @@
 (defn units-under-cursor [] (.getUnitsUnderCursor api))
 (defn selected-unit-index [] (.getSelectedUnitIndex api))
 (defn selected-unit [] (.getSelectedUnit api))
+(defn selected-unit-island [] (.getSelectedUnitIsland api))
 
 (defn skill-types [] (.getSkillTypes api))
 
@@ -89,12 +90,16 @@
 (defn battle-unit-cursor [] (PSP/getBattleUnitMenuCursorPos))
 (defn battle-attack-cursor [] (PSP/getBattleAttackMenuCursorPos))
 (defn battle-confine-cursor [] (PSP/getConfineMenuCursorPos))
+(defn marona-cursor [] (PSP/getMaronaMenuCursorPos))
+(defn dungeon-menu-cursor [] (PSP/getDungeonMenuCursorPos))
 
 (defn list-units [] (.listUnits api))
 (defn summoned-units [] (PSP/getSummonedUnits))
 
 (defn dungeons [] (.getDungeons api))
 (defn generated-dungeon [] (.getGeneratedDungeon api))
+
+(defn bol [] (.getBol api))
 
 (defn contiguous-memory
   "Returns count arrays of size bytes starting at offset."
@@ -196,8 +201,7 @@
         :else
         (let [frames (second i)]
           (if (= (first buttons) :analog)
-            (do (println i buttons)
-              (push-analog (nth buttons 1) (nth buttons 2) frames))
+            (push-analog (nth buttons 1) (nth buttons 2) frames)
             (press buttons frames)))))))
 
 ;; (defn play-input
@@ -206,7 +210,7 @@
 ;;   [input]
 ;;   (doseq [[buttons frames] input]
 ;;     (cond
-;;       (keyword? buttons) 
+;;       (keyword? buttons)
 ;;       (= (first buttons) :analog)
 ;;       (dotimes [i frames]
 ;;         (step (nth buttons 1) (nth buttons 2)))
@@ -245,7 +249,7 @@
 (defn player-y [] (PSP/getPlayerY))
 (defn player-z [] (PSP/getPlayerZ))
 
-(defn get-player-pos []
+(defn player-pos []
   (let [x (player-x)
         y (player-y)
         z (player-z)]
@@ -274,9 +278,10 @@
          (<= (dist x z cx cz) radius))))
 
 (defn dist
-  ([x1 z1 x2 z2]  (dist [x1 0 z1]
-                        [x2 0 z2]))
-  ([[x1 y1 z1] [x2 y2 z2]]
+  ([x z] (dist x z (player-x) (player-z)))
+  ([x1 z1 x2 z2]  (dist x1 0 z1
+                        x2 0 z2))
+  ([x1 y1 z1 x2 y2 z2]
    (Math/sqrt (+ (Math/pow (- x1 x2) 2)
                  (Math/pow (- y1 y2) 2)
                  (Math/pow (- z1 z2) 2)))))
@@ -320,6 +325,9 @@
 (defn can-confine?
   "Checks if the unit that's being targeted can be confined to."
   [] (PSP/canConfine))
+
+(defn can-throw?
+  [] (PSP/canThrow))
 
 (defn stage-started?
   "Checks if a stage has started."
