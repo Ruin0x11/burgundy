@@ -342,5 +342,5 @@
   "Moves the cursor to and selects the given unit."
   [unit]
   (move-to-unit unit)
-  (do-nothing 10)
+  (wait 10)
   (select-unit-in-cursor unit))

@@ -93,6 +93,9 @@
 (defn list-units [] (.listUnits api))
 (defn summoned-units [] (PSP/getSummonedUnits))
 
+(defn dungeons [] (.getDungeons api))
+(defn generated-dungeon [] (.getGeneratedDungeon api))
+
 (defn contiguous-memory
   "Returns count arrays of size bytes starting at offset."
   [offset size count]
@@ -103,7 +106,8 @@
          (map bytes))))
 
 (def button-masks
-  {:square    0x8000
+  {:wait      0x0000
+   :square    0x8000
    :triangle  0x1000
    :circle    0x2000
    :cross     0x4000
@@ -116,27 +120,18 @@
    :ltrigger  0x0100
    :rtrigger  0x0200})
 
-(def □ :square)
-(def △ :triangle)
-(def ○ :circle)
-(def × :cross)
-(def ↑ :up)
-(def ↓ :down)
-(def ← :left)
-(def → :right)
+(def □ [:square])
+(def △ [:triangle])
+(def ○ [:circle])
+(def × [:cross])
+(def ↑ [:up])
+(def ↓ [:down])
+(def ← [:left])
+(def → [:right])
+(def Ｌ [:ltrigger])
+(def Ｒ [:rtrigger])
 
 (def menu-delay 2)
-
-(defn press
-  ([button]
-   (press button menu-delay))
-  ([button delay]
-   [[[button] 1          ]
-    [[]       delay]]))
-
-(defn wait [frames]
-  [[[] frames]]
-  )
 
 (defn button-bits
   "Converts a sequence of button keywords into a button bitmask."
@@ -169,23 +164,60 @@
   (gen-type-kw-map skill-type-kws (skill-types))
   (gen-type-id-map skill-type-ids skill-type-kws))
 
-(defn play-input
-  "Sends input commands.
-  Expects a vector of pairs of a vector of button keywords and the number of frames to hold them for."
-  [input]
-  (doseq [[buttons frames] input]
-    (cond
-      (= (first buttons) :analog)
-      (dotimes [i frames]
-        (step (nth buttons 1) (nth buttons 2)))
+;; (play-input [:square 20] )
 
-      :else (dotimes [i frames]
-              (let [bitmask (button-bits buttons)]
-                (step bitmask))))))
+(defn press [buttons frames]
+  (let [bitmask (button-bits buttons)]
+    (dotimes [i frames]
+      (step bitmask))))
 
-(defn do-nothing [frames]
-  (play-input
-   (wait frames)))
+(defn wait [frames]
+  (press [] frames))
+
+(defn push-analog [x y frames]
+  (dotimes [i frames]
+    (step x y)))
+
+;; 40 [:a] [:a 1] [[:a :b] 1] [[:analog 1 2] 12] [[:a] [:a]]
+
+(defn play-input [input]
+  (doseq [i input]
+    (let [buttons (if (vector? (first i)) (first i) [(first i)])]
+      (cond
+        (= 1 (count i))
+        (do
+          (press buttons 1)
+          (wait menu-delay))
+
+        (= (first i) :seq)
+        (let [[input-list] (rest i)]
+          (play-input input-list))
+
+        :else
+        (let [frames (second i)]
+          (if (= (first buttons) :analog)
+            (do (println i buttons)
+              (push-analog (nth buttons 1) (nth buttons 2) frames))
+            (press buttons frames)))))))
+
+;; (defn play-input
+;;   "Sends input commands.
+;;   Expects a vector of pairs of a vector of button keywords and the number of frames to hold them for."
+;;   [input]
+;;   (doseq [[buttons frames] input]
+;;     (cond
+;;       (keyword? buttons) 
+;;       (= (first buttons) :analog)
+;;       (dotimes [i frames]
+;;         (step (nth buttons 1) (nth buttons 2)))
+
+;; :else (dotimes [i frames]
+;;         (let [bitmask (button-bits buttons)]
+;;           (step bitmask))))))
+
+;; (defn do-nothing [frames]
+;;   (play-input
+;;    (wait frames)))
 
 (defn print-flags [] (PSP/printFlags))
 (defn diff-memory

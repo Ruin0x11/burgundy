@@ -301,6 +301,27 @@ public class PSP {
     private ArrayList<Unit> itemUnits = new ArrayList<Unit>();
     private ArrayList<Unit> deadUnits = new ArrayList<Unit>();
 
+    private ArrayList<Dungeon> dungeons = new ArrayList<Dungeon>();
+
+    public void loadDungeons() {
+        dungeons.clear();
+        int dungeonCount = readRAMU8(0x0157353D);
+        for(int i = 0; i < dungeonCount; i++) {
+            int offset = Dungeon.dungeonOffset + (i*100);
+            byte[] dungeonRam = readRam(offset, 100);
+            Dungeon dungeon = new Dungeon(dungeonRam);
+            dungeons.add(dungeon);
+        }
+    }
+
+    public Dungeon getGeneratedDungeon() {
+        byte[] dungeonData = readRam(Dungeon.generatedDungeonOffset, 100);
+        Dungeon dungeon = new Dungeon(dungeonData);
+        return dungeon;
+    }
+
+    public Collection<Dungeon> getDungeons() { return Collections.unmodifiableList(dungeons); }
+
     private HashMap<Integer, SkillType> skillTypes = new HashMap<Integer, SkillType>();
 
     public SkillType getSkillType(int skillID) { return skillTypes.get(skillID); }
@@ -405,6 +426,7 @@ public class PSP {
                 enemyUnits.add(unit);
             }
         }
+        loadDungeons();
     }
 
     public void listUnits() {

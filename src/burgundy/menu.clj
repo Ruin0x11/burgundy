@@ -60,8 +60,7 @@
                   (Math/abs (- diff size))
                   diff)
          [arrow trigger] (get-menu-buttons start end size diff)]
-     (apply concat
-            (concat (repeat amount (press arrow)))))))
+     [:seq (vec (repeat amount [arrow]))])))
 
 
 (defn wait-until-active
@@ -78,8 +77,7 @@
        (println "===Active.===")))))
 
 (defn cancel []
-  (play-input
-   (press :circle)))
+  (play-input ○))
 
 (defn select-active
   "Try to select the active unit."
@@ -99,8 +97,7 @@
   (if (> (dist-unit unit) 1.0)
     (if (can-move?)
       (do
-        (play-input
-         (press :cross))
+        (play-input [:cross])
         (wait-until-active))
       (let [angle (mod (+ (angle-to unit) 225) 360)
             [ax ay] (angle->analog angle 1.0)]
@@ -117,17 +114,15 @@
         [ax ay] (angle->analog angle 1.0)]
     (select-active)
     (play-input
-     (concat
-      (press :cross)
-      (menu-key-seq (battle-unit-cursor) 0 :battle-unit)
-      (press :cross)))
+     [:cross]
+     (menu-key-seq (battle-unit-cursor) 0 :battle-unit)
+     [:cross])
 
     (move-to target 10.0 dir)
 
     (if (can-move?)
       (do
-        (play-input
-         (press :cross 20))
+        (play-input [:cross 20])
         (wait-until-active))
       ;; TODO: fix.
       (look-for-walkable (active-unit)))))
@@ -138,14 +133,13 @@
 
   (play-input
    (concat
-    (wait 20)
-    (press :cross 20)
+    [:wait 20]
+    [:cross 20]
     (menu-key-seq (battle-unit-cursor) 0 :battle-unit)))
 
   (if (can-move?)
     (do
-      (play-input
-       (press :cross 20))
+      (play-input [:cross 20])
       (wait-until-active))
     (look-for-walkable (active-unit))))
 
@@ -171,25 +165,22 @@
        (select-unit target)))
 
    (play-input
-    (concat
-     (wait 10)
-     (press :cross)
-     (menu-key-seq (battle-unit-cursor) 1 :battle-unit)
-     (press :cross)))
+    [:wait 10]
+    [:cross]
+    (menu-key-seq (battle-unit-cursor) 1 :battle-unit)
+    [:cross])
 
    (play-input
-    (concat
-     (menu-key-seq (battle-attack-cursor)
+    [(menu-key-seq (battle-attack-cursor)
                    (get-skill-pos skill skills)
                    :battle-attack
                    (count skills))
-     (press :cross 4)))
+     [:cross 4]])
 
-   (do-nothing 20)
+   (wait 20)
    (if (can-attack?)
      (do
-       (play-input
-        (press :cross))
+       (play-input [:cross])
        (wait-until-active)
        (if (and (not (has-attacked?)) (> retries 0))
          (recur target skill skills (- retries 1))))
@@ -201,56 +192,46 @@
 (defn end-action []
   (select-active)
   (play-input
-   (concat
-    (wait 4)
-    (press :cross)
+   [[:wait 4]
+    [:cross]
     (menu-key-seq (battle-unit-cursor) 5 :battle-unit)
-    (press :cross 20)
-    (wait 20)))
+    [:cross]
+    [:wait 20]])
   (wait-until-active)
   )
 
 (defn confine-unit [target n]
   (select-active)
   (play-input
-   (concat
-    (wait 10)
-    (press :cross)
+   [[:wait 4]
+    [:cross]
     (menu-key-seq (battle-unit-cursor) 3 :battle-unit)
-    (press :cross)))
+    [:cross]])
 
   (select-unit target)
   
   (if (can-confine?)
     (do
       (play-input
-       (concat
-        (press :cross)
-        (menu-key-seq (battle-confine-cursor) n :confine)
-        (press :cross)
-        (cancel)
-        (wait 10))))
+       [:cross]
+       (menu-key-seq (battle-confine-cursor) n :confine)
+       [:cross]
+       (cancel)
+       [:wait 10]))
     (do
       (cancel)
       (cancel))))
 
 (defn intrusion-stage []
   (play-input
-   (concat
-    (press :cross 20))))
+   [[:cross 20]]))
 
 (defn start-stage []
   (wait-until-active))
 
 (defn finish-stage []
   (play-input
-   (concat
-    ;; skip bol increment
-    (press :cross)
-    ;; close result menu
-    (press :cross)
-    ;; skip title status in dungeons
-    ;; TODO: detect if in dungeon
-    (press :cross)
-    (wait 40)
-    (wait-until-active))))
+   [:cross]
+   [:cross]
+   [:cross 40]
+   (wait-until-active)))
