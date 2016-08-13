@@ -1,11 +1,7 @@
 package com.ruin.psp;
 
 import com.ruin.psp.models.*;
-import java.util.Collections;
-import java.util.Collection;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.nio.*;
 import java.io.*;
 import java.util.Arrays;
@@ -335,8 +331,7 @@ public class PSP {
         return PSP.readRAMU16(0x0012F384);
     }
 
-    private ArrayList<Unit> islandCharas = new ArrayList<Unit>();
-    private ArrayList<Unit> islandItems = new ArrayList<Unit>();
+    private HashMap<Integer, Unit> islandUnits = new LinkedHashMap<Integer, Unit>();
     private HashMap<Integer, Unit> units = new HashMap<Integer, Unit>();
     private ArrayList<Unit> friendlyUnits = new ArrayList<Unit>();
     private ArrayList<Unit> enemyUnits = new ArrayList<Unit>();
@@ -346,27 +341,25 @@ public class PSP {
 
     private ArrayList<Dungeon> dungeons = new ArrayList<Dungeon>();
 
-    public void loadIslandCharas() {
-        islandCharas.clear();
+    public void loadIslandUnits() {
+        islandUnits.clear();
+
         int charaCount = PSP.readRAMU16(0x01573510);
         for(int i = 0; i < charaCount; i++) {
             int offset = UnitStatus.unitStatusOffset + (UnitStatus.unitStatusSize * i);
             byte[] data = PSP.readRam(offset, UnitStatus.unitStatusSize);
             UnitStatus status = new UnitStatus(data);
             Unit unit = new Unit(status);
-            islandCharas.add(unit);
+            islandUnits.put(unit.getIdentifier(), unit);
         }
-    }
 
-    public void loadIslandItems() {
-        islandItems.clear();
-        int itemCount = PSP.readRAMU16(0x01573516);
+        int itemCount = PSP.readRAMU16(0x01573514);
         for(int i = 0; i < itemCount; i++) {
             int offset = UnitStatus.itemUnitStatusOffset + (UnitStatus.unitStatusSize * i);
             byte[] data = PSP.readRam(offset, UnitStatus.unitStatusSize);
             UnitStatus status = new UnitStatus(data);
             Unit unit = new Unit(status);
-            islandItems.add(unit);
+            islandUnits.put(unit.getIdentifier(), unit);
         }
     }
 
@@ -388,8 +381,8 @@ public class PSP {
     }
 
     public Collection<Dungeon> getDungeons() { return Collections.unmodifiableList(dungeons); }
-    public Collection<Unit> getIslandCharas() { return Collections.unmodifiableList(islandCharas); }
-    public Collection<Unit> getIslandItems() { return Collections.unmodifiableList(islandItems); }
+    public Collection<Unit> getIslandUnits() { return islandUnits.values(); }
+    public Unit getIslandUnit(int identifier) { return islandUnits.get(identifier); }
 
     private HashMap<Integer, SkillType> skillTypes = new HashMap<Integer, SkillType>();
 
@@ -494,8 +487,7 @@ public class PSP {
                 enemyUnits.add(unit);
             }
         }
-        loadIslandCharas();
-        loadIslandItems();
+        loadIslandUnits();
         loadDungeons();
     }
 

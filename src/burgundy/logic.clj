@@ -4,20 +4,51 @@
             [burgundy.dungeon :refer :all]
             [burgundy.isle :refer :all]
             [burgundy.menu :refer :all]
-            [alter-ego.core :refer :all]))
+            [alter-ego.core :refer :all])
+  (:import (com.ruin.psp.models Unit)))
+
+(def logic-state
+  ":team-members - units that will not be deleted
+   :tags - allows selecting targets of actions, like what objects to fuse"
+  (ref {:team-members [] :tags {}}))
+
+(defn tag-unit [unit-or-identifier tag]
+  (let [identifier (if (instance? Unit unit-or-identifier) (get-identifier unit-or-identifier) unit-or-identifier)]
+    (dosync
+     (commute logic-state assoc-in [:tags identifier] tag))))
+
+(defn get-unit-tag [unit-or-identifier]
+  (let [identifier (if (instance? Unit unit-or-identifier) (get-identifier unit-or-identifier) unit-or-identifier)] 
+    (get-in @logic-state [:tags identifier])))
+
+(defn vvals [m]
+  (when (map? m) (vals m)))
+
+(defn units-with-role [role]
+  (filter #(= role (:role (val %))) (:tags @logic-state)))
 
 (def ≫ sequence)
 (def ？ selector)
 ;; (def λ action)
 
 (defn should-heal? []
-  (some #{true} (map needs-heal? (island-charas))))
+  (some #{true} (map needs-heal? (island-units))))
+
+(defn latest-chara []
+  (last (remove is-item? (island-units))))
+
+(defn latest-item []
+  (last (filter is-item? (island-units))))
+
+(defn create-character-with-tag [class tag]
+  (when (create-character class 0)
+    (tag-unit (latest-chara) tag)))
 
 (defn island-tree []
   (？ "Island Tree"
       (≫ "Heal"
        (action "Should heal?" (should-heal?))
-       (action (heal-party)
+       (action "Heal party" (heal-party)
                true))
       (？ "Dungeon"
           (action "Delete Dungeon"

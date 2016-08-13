@@ -14,6 +14,7 @@
 
 (defn-unit get-name [unit] (.getName unit))
 (defn-unit get-id [unit] (if unit (.getID unit) -1))
+(defn-unit get-identifier [unit] (.getIdentifier unit))
 (defn-unit get-mana [unit] (.getMana unit))
 (defn-unit get-max-move [unit] (.getRemainingMove unit))
 (defn-unit get-remaining-move [unit] (.getRemainingMove unit))

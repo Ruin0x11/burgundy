@@ -3,18 +3,19 @@
             [burgundy.skill :refer :all]
             [burgundy.unit :refer :all]))
 
+(def menu-key-types
+  {:default [:down :rtrigger :up :ltrigger]
+   :charagen [:left :left :right :right]})
+
 (def menu-scroll-amounts
   {:attack 8
    :confine 5
    :status 7})
 
 (def menu-sizes
-  {:attack 999
-   :battle-unit 6 ;; plus one if marona
+  {:battle-unit 6 ;; plus one if marona
    :battle-main 4
-   :marona 5
-   :confine 999
-   :status 999})
+   :marona 5})
 
 (def menu-battle-unit
   {:move 0
@@ -25,33 +26,40 @@
    :end-action 5})
 
 (defn adjust-menu-size [size menu-type]
-  (if (and (not (is-marona?))
+  (if (and (not (on-island?))
+           (not (is-marona?))
            (= menu-type :battle-unit))
     (- size 1)
     size))
 
 (defn adjust-menu-pos [pos menu-type]
-  (if (and (not (is-marona?))
+  (if (and (not (on-island?))
+           (not (is-marona?))
            (= menu-type :battle-unit)
            (> pos 3))
     (- pos 1)
     pos))
 
-(defn get-menu-buttons [start end size diff]
-  (if (< (mod diff size) (/ size 2))
-    (if (> start end)
-      [:up   :ltrigger]
-      [:down :rtrigger]
-      )
-    (if (> start end)
-      [:down :ltrigger]
-      [:up   :rtrigger]
-      )))
+(defn get-menu-buttons [start end size diff menu-type]
+  (let [menu-type (if (contains? menu-key-types menu-type) menu-type :default)
+        buttons (menu-type menu-key-types)]
+    (if (>= (mod diff size) (/ size 2))
+      (if (> start end)
+        (take 2 buttons)
+        (drop 2 buttons))
+      (if (> start end)
+        (drop 2 buttons)
+        (take 2 buttons)))))
+
+(defn make-key-seq [key amount]
+  [:seq (vec (repeat amount key))])
 
 (defn menu-key-seq
   "Calculates an input sequence to traverse a menu from position start to position end."
-  ([start end menu-type] (menu-key-seq start end menu-type
-                                       (menu-type menu-sizes)))
+  ([start end menu-type]
+   (let [size (if (contains? menu-sizes menu-type)
+                (menu-type menu-sizes) 1)]
+     (menu-key-seq start end menu-type size)))
   ([start end menu-type size]
    (let [size (adjust-menu-size size menu-type)
          start (adjust-menu-pos start menu-type)
@@ -60,8 +68,9 @@
          amount (if (> diff (Math/floor (/ size 2)))
                   (Math/abs (- diff size))
                   diff)
-         [arrow trigger] (get-menu-buttons start end size diff)]
-     [:seq (vec (repeat amount [arrow]))])))
+         [arrow trigger] (get-menu-buttons start end size diff menu-type)]
+     (make-key-seq [arrow] amount)
+     )))
 
 
 (defn wait-until-active

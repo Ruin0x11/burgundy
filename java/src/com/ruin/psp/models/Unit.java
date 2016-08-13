@@ -28,6 +28,8 @@ public class Unit {
         }
     }
 
+    private int identifier;
+
     private int id;
     private int heldID;
     private int holdingID;
@@ -174,6 +176,8 @@ public class Unit {
     }
 
     private void loadFromUnitStatus(UnitStatus unitStatus) {
+        this.identifier = unitStatus.getIdentifier();
+        
         this.mana = unitStatus.getMana();
         this.name = unitStatus.getName();
         this.numSkills = unitStatus.getNumSkills();
@@ -198,6 +202,7 @@ public class Unit {
         this.move = unitStatus.getMove();
         this.data = unitStatus.getData();
 
+        this.isItem = unitStatus.isItem();
         this.heldID = unitStatus.getHeldID();
     }
 
@@ -207,6 +212,10 @@ public class Unit {
 
     public int getID() {
         return id;
+    }
+
+    public int getIdentifier() {
+        return identifier;
     }
 
     public String getName() {

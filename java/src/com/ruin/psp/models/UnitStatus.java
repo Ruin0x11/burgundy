@@ -27,6 +27,8 @@ public class UnitStatus {
     private int statRes;
     private int statSpd;
 
+    private int identifier;
+
     private int numSkills;
 
     private int mana;
@@ -52,6 +54,8 @@ public class UnitStatus {
         bb.order(ByteOrder.LITTLE_ENDIAN);
 
         this.data = data;
+
+        this.identifier = bb.getInt(0x25B);
 
         byte[] nameData = new byte[23];
         bb.position(0x10);
@@ -113,9 +117,11 @@ public class UnitStatus {
 
         this.applyTitle();
 
+        this.isItem = bb.get(0x27D) == 1;
+
         this.heldID = bb.getShort(0x266);
 
-        if(this.heldID != -1) {
+        if(!this.isItem && this.heldID != -1) {
             this.applyItem();
         }
     }
@@ -146,7 +152,7 @@ public class UnitStatus {
 
     public void dump() {
         try {
-            FileOutputStream fos = new FileOutputStream("/home/prin/dump/" + this.name + ".dump");
+            FileOutputStream fos = new FileOutputStream("/home/prin/dump/" + this.name + "_detail.dump");
             fos.write(this.data);
             fos.close();
         } catch (Exception e) {
@@ -161,6 +167,10 @@ public class UnitStatus {
 
     public String getName() {
         return name;
+    }
+
+    public int getIdentifier() {
+        return identifier;
     }
 
     public int getLevel() {
@@ -237,5 +247,9 @@ public class UnitStatus {
 
     public ArrayList<Skill> getSkills() {
         return skills;
+    }
+
+    public boolean isItem() {
+        return isItem;
     }
 }

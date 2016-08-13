@@ -3,6 +3,8 @@
             [burgundy.unit :refer :all]
             [burgundy.skill :refer :all]
             [burgundy.dungeon :refer :all]
+            [burgundy.charagen :refer :all]
+            [burgundy.types :refer :all]
             [burgundy.menu :refer :all]))
 
 (def island-dist 7.0)
@@ -72,13 +74,30 @@
 (defn summon [pos]
   (goto-marona)
   (play-input [× [:wait 30] × [:wait 10]
-               (menu-key-seq (marona-cursor) 0 :marona)
                (menu-key-seq (marona-cursor) pos :marona 99)
                × [:wait 30]]))
 
 (defn store [pos]
   (goto-marona)
-  (play-input [× [:wait 30] × [:wait 10]
-               (menu-key-seq (marona-cursor) 1 :marona)
+  (play-input [× [:wait 30] ↓ × [:wait 10]
                (menu-key-seq (marona-cursor) pos :marona 99)
                × [:wait 30]]))
+
+(defn create-character
+  ([class exp] (create-character class exp 2))
+  ([class exp attempts]
+   (when-not (= attempts 0)
+     (when (in? (vals class-type-kws) class)
+       (goto-marona)
+       (play-input [× [:wait 30] ↓ ↓ × [:wait 10]])
+       (let [pos (soul-with-class class)
+             soul-count (count (neutral-units))]
+         (if (= pos -1)
+           (do
+             (cancel)
+             (recur class exp (- attempts 1)))
+           (do
+             (play-input [(menu-key-seq 0 pos :charagen soul-count)
+                          (make-key-seq ↑ (- exp 1))
+                          × [:start] × ↑ × [:wait 40]])
+             true)))))))
