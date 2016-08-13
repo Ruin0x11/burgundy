@@ -39,19 +39,20 @@
 
 (defn heal-party []
   (move-to-unit (unit-by-name "Europa") :island)
-  (play-input [× [:wait 30] × [:wait 10] [:start] ○]))
+  (play-input [× [:wait 30] × [:wait 15] [:start] ○]))
 
 (defn create-dungeon [options]
   (when (< (count (dungeons)) max-dungeons)
     (move-to-unit (unit-by-name "Dulap") :island)
-    (play-input [× [:wait 50] × [:wait 10] ×])
+    (play-input [× [:wait 50] × [:wait 15] ×])
     (search-for-dungeon options)
+    (wait 10)
     (cancel)))
 
 (defn delete-dungeon [pos]
   (when (> (count (dungeons)) 0)
     (move-to-unit (unit-by-name "Dulap") :island)
-    (play-input [× [:wait 50] × [:wait 10] × ↓ ×
+    (play-input [× [:wait 50] × [:wait 15] × ↓ ×
                  (menu-key-seq (dungeon-menu-cursor)
                                pos
                                :dungeon-menu
@@ -61,7 +62,7 @@
 (defn go-to-dungeon [pos]
   (when (> (count (dungeons)) 0)
     (move-to-unit (unit-by-name "Dulap") :island)
-    (play-input [× [:wait 50] × [:wait 10] × ↓ ↓ ×
+    (play-input [× [:wait 50] × [:wait 15] × ↓ ↓ ×
                  (menu-key-seq (dungeon-menu-cursor)
                                pos
                                :dungeon-menu
@@ -70,7 +71,14 @@
 
 (defn summon [pos]
   (goto-marona)
-  (play-input [×  [:wait 30] × [:wait 10]
+  (play-input [× [:wait 30] × [:wait 10]
                (menu-key-seq (marona-cursor) 0 :marona)
+               (menu-key-seq (marona-cursor) pos :marona 99)
+               × [:wait 30]]))
+
+(defn store [pos]
+  (goto-marona)
+  (play-input [× [:wait 30] × [:wait 10]
+               (menu-key-seq (marona-cursor) 1 :marona)
                (menu-key-seq (marona-cursor) pos :marona 99)
                × [:wait 30]]))

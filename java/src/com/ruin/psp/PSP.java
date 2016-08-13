@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.lang.Math;
 
 public class PSP {
+    public static final int RAM_SIZE = 0x17FFFFF;
 
     static {
         try {
@@ -62,7 +63,7 @@ public class PSP {
     /**
      * Returns the number of units counted as summoned.
      */
-    public static int getSummonedUnits() {
+    public static int getConfinedUnits() {
         return readRAMU16(0x0012F384);
     }
 
@@ -102,6 +103,10 @@ public class PSP {
         return getDialogType() == 0x271A;
     }
 
+    public static boolean isOnIsland() {
+        return PSP.readRAMU16(0x00121740) == 1;
+    }
+
     /**
      * Indicates whether or not a non-friendly unit is acting.
      * Always 0x0f during the non-friendly unit's turn.
@@ -119,10 +124,10 @@ public class PSP {
     }
 
     /**
-     * Returns the current menu layer number.
+     * Returns the current menu layer number (in battle).
      * If 0, there are no menus open, but the player still might not be in control.
      */
-    private static int getMenuLayer() {
+    public static int getMenuLayer() {
         return readRAMU8(0x001BC054);
     }
 
@@ -136,7 +141,7 @@ public class PSP {
         boolean stageBanner = isStageBannerUp();
         // System.out.println(menuLayer + " " + transitionFrames + " " + enemyFrames + " " + stageBanner + " " + getDialogType());
         // System.out.println(isStageClear());
-        
+
         return menuLayer == 0 &&
             (transitionFrames == 0 || transitionFrames > 0x40) &&
             enemyFrames != 0x0f &&
@@ -201,7 +206,7 @@ public class PSP {
 
     public static int getSummonedItems() {
         int friendlyCharas = readRAMU16(0x0012F37C);
-        int summonedUnits = getSummonedUnits();
+        int summonedUnits = getConfinedUnits();
 
         int summonedItems = summonedUnits - friendlyCharas;
 
@@ -266,6 +271,10 @@ public class PSP {
         return Collections.unmodifiableList(enemyUnits);
     }
 
+    public List<Unit> getNeutralUnits() {
+        return Collections.unmodifiableList(neutralUnits);
+    }
+
     public List<Unit> getItemUnits() {
         return Collections.unmodifiableList(itemUnits);
     }
@@ -322,6 +331,12 @@ public class PSP {
         return units.get(index);
     }
 
+    public static int getSummonedUnitCount() {
+        return PSP.readRAMU16(0x0012F384);
+    }
+
+    private ArrayList<Unit> islandCharas = new ArrayList<Unit>();
+    private ArrayList<Unit> islandItems = new ArrayList<Unit>();
     private HashMap<Integer, Unit> units = new HashMap<Integer, Unit>();
     private ArrayList<Unit> friendlyUnits = new ArrayList<Unit>();
     private ArrayList<Unit> enemyUnits = new ArrayList<Unit>();
@@ -330,6 +345,30 @@ public class PSP {
     private ArrayList<Unit> deadUnits = new ArrayList<Unit>();
 
     private ArrayList<Dungeon> dungeons = new ArrayList<Dungeon>();
+
+    public void loadIslandCharas() {
+        islandCharas.clear();
+        int charaCount = PSP.readRAMU16(0x01573510);
+        for(int i = 0; i < charaCount; i++) {
+            int offset = UnitStatus.unitStatusOffset + (UnitStatus.unitStatusSize * i);
+            byte[] data = PSP.readRam(offset, UnitStatus.unitStatusSize);
+            UnitStatus status = new UnitStatus(data);
+            Unit unit = new Unit(status);
+            islandCharas.add(unit);
+        }
+    }
+
+    public void loadIslandItems() {
+        islandItems.clear();
+        int itemCount = PSP.readRAMU16(0x01573516);
+        for(int i = 0; i < itemCount; i++) {
+            int offset = UnitStatus.itemUnitStatusOffset + (UnitStatus.unitStatusSize * i);
+            byte[] data = PSP.readRam(offset, UnitStatus.unitStatusSize);
+            UnitStatus status = new UnitStatus(data);
+            Unit unit = new Unit(status);
+            islandItems.add(unit);
+        }
+    }
 
     public void loadDungeons() {
         dungeons.clear();
@@ -349,6 +388,8 @@ public class PSP {
     }
 
     public Collection<Dungeon> getDungeons() { return Collections.unmodifiableList(dungeons); }
+    public Collection<Unit> getIslandCharas() { return Collections.unmodifiableList(islandCharas); }
+    public Collection<Unit> getIslandItems() { return Collections.unmodifiableList(islandItems); }
 
     private HashMap<Integer, SkillType> skillTypes = new HashMap<Integer, SkillType>();
 
@@ -453,6 +494,8 @@ public class PSP {
                 enemyUnits.add(unit);
             }
         }
+        loadIslandCharas();
+        loadIslandItems();
         loadDungeons();
     }
 

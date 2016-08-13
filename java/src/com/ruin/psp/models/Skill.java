@@ -28,4 +28,8 @@ public class Skill {
     public int getExp() {
         return (int) exp & 0xFFFF;
     }
+
+    public String toString() {
+        return "SKILL: " + id + " " + level + " " + exp;
+    }
 }

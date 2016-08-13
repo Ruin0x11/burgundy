@@ -56,14 +56,16 @@
   (load-state "temp"))
 
 (defn play [n]
+  (load-skill-types)
+  (gen-type-kw-maps)
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
            ;; (list-units)
-           
+
            ;; (snoop-range 0x01546300 4 64)
            ;; (snoop-range (unit-offset (active-unit)) 4 64)
-           (if @run-ai?
-             (run-battle-engine))
+           ;; (if @run-ai?
+           ;;   )
            (step))))
 
 (defn continue! []
@@ -84,12 +86,8 @@
 
     (restart!)
     (PSP/setFramelimit false)
+    (load-state "55")
     (step)
     (step)
-    (load-state "return")
-    (step)
-    (step)
-    (.loadSkillTypes api)
-    (gen-type-kw-maps)
     (continue!)
     (shutdown!)))

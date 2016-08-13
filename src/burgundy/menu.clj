@@ -25,13 +25,13 @@
    :end-action 5})
 
 (defn adjust-menu-size [size menu-type]
-  (if (and (not true)
+  (if (and (not (is-marona?))
            (= menu-type :battle-unit))
     (- size 1)
     size))
 
 (defn adjust-menu-pos [pos menu-type]
-  (if (and (not true)
+  (if (and (not (is-marona?))
            (= menu-type :battle-unit)
            (> pos 3))
     (- pos 1)
@@ -78,7 +78,7 @@
        (println "===Active.===")))))
 
 (defn cancel []
-  (play-input ○))
+  (play-input [○]))
 
 (defn select-active
   "Try to select the active unit."
@@ -107,14 +107,14 @@
         [ax ay] (angle->analog angle 1.0)]
     (select-active)
     (play-input
-     [:cross]
-     (menu-key-seq (battle-unit-cursor) 0 :battle-unit)
-     [:cross])
+     [×
+      (menu-key-seq (battle-unit-cursor) 0 :battle-unit)
+      ×])
 
     (move-to target 10.0 dir)
 
     (find-actionable (active-unit))
-    (play-input [:cross 20])
+    (play-input [[:cross 20]])
     (wait-until-active)))
 
 (defn move-unit-quick
@@ -122,13 +122,12 @@
   (move-to target dist dir)
 
   (play-input
-   (concat
-    [:wait 20]
+   [[:wait 20]
     [:cross 20]
-    (menu-key-seq (battle-unit-cursor) 0 :battle-unit)))
+    (menu-key-seq (battle-unit-cursor) 0 :battle-unit)])
 
   (find-actionable (active-unit))
-  (play-input [:cross 20])
+  (play-input [[:cross 20]])
   (wait-until-active))
 
 (defn skill-pos-for-target [target skills]
@@ -139,10 +138,9 @@
 
 (defn select-skill [skill skills]
   (play-input
-   [[:wait 10]
-    [:cross]
+   [[:wait 10] ×
     (menu-key-seq (battle-unit-cursor) 1 :battle-unit)
-    [:cross]])
+    ×])
 
   (play-input
    [(menu-key-seq (battle-attack-cursor)
@@ -171,7 +169,7 @@
    (wait 20)
    (if (can-attack?)
      (do
-       (play-input [:cross])
+       (play-input [×])
        (wait-until-active)
        (if (and (not (has-attacked?)) (> retries 0))
          (recur target skill skills (- retries 1))))
@@ -192,32 +190,28 @@
 (defn end-action []
   (select-active)
   (play-input
-   [[:wait 4]
-    [:cross]
+   [[:wait 4] ×
     (menu-key-seq (battle-unit-cursor) 5 :battle-unit)
-    [:cross]
-    [:wait 20]])
+    × [:wait 20]])
   (wait-until-active)
   )
 
 (defn confine-unit [target n]
   (select-active)
   (play-input
-   [[:wait 4]
-    [:cross]
+   [[:wait 4] ×
     (menu-key-seq (battle-unit-cursor) 3 :battle-unit)
-    [:cross]])
+    ×])
 
   (select-unit target)
   
   (if (can-confine?)
     (do
       (play-input
-       [:cross]
-       (menu-key-seq (battle-confine-cursor) n :confine)
-       [:cross]
-       (cancel)
-       [:wait 10]))
+       [×
+        (menu-key-seq (battle-confine-cursor) n :confine)
+        × ○
+        [:wait 10]]))
     (do
       (cancel)
       (cancel))))
@@ -231,7 +225,5 @@
 
 (defn finish-stage []
   (play-input
-   [:cross]
-   [:cross]
-   [:cross 40]
-   (wait-until-active)))
+   [× × [:cross 40]
+    (wait-until-active)]))

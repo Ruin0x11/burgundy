@@ -7,6 +7,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef com_ruin_psp_PSP_RAM_SIZE
+#define com_ruin_psp_PSP_RAM_SIZE 25165823L
 #undef com_ruin_psp_PSP_numSkills
 #define com_ruin_psp_PSP_numSkills 577L
 #undef com_ruin_psp_PSP_skillOffset

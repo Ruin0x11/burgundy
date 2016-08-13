@@ -1,15 +1,36 @@
 (ns burgundy.unit
   (:require [burgundy.interop :refer :all]
+            [burgundy.types :refer :all]
             [burgundy.skill :refer :all])
   (:import com.ruin.psp.PSP))
 
 (defmacro defn-unit
-  "Define a function that either takes a unit argument, or takes no arguments and is applied to the active unit."
+  "Define a function that either takes a unit as the first argument, or takes one less argument and is applied to the active unit."
   [name args body]
   (let [other (rest args)]
     `(defn ~name
        ([~@other] (~name (active-unit) ~@other))
        (~args ~body))))
+
+(defn-unit get-name [unit] (.getName unit))
+(defn-unit get-id [unit] (if unit (.getID unit) -1))
+(defn-unit get-mana [unit] (.getMana unit))
+(defn-unit get-max-move [unit] (.getRemainingMove unit))
+(defn-unit get-remaining-move [unit] (.getRemainingMove unit))
+(defn-unit get-jump [unit] (.getJump unit))
+
+(defn-unit get-title [unit] (.getTitle unit))
+(defn-unit get-class [unit] (get class-type-kws (.getClassType unit)))
+
+(defn-unit get-hp [unit] (.getHP unit))
+(defn-unit get-current-hp [unit] (.getCurrentHP unit))
+(defn-unit get-atk [unit] (.getAtk unit))
+(defn-unit get-def [unit] (.getDef unit))
+(defn-unit get-int [unit] (.getInt unit))
+(defn-unit get-res [unit] (.getRes unit))
+(defn-unit get-spd [unit] (.getSpd unit))
+
+(defn-unit damaged? [unit] (> (- (get-hp unit) (get-current-hp unit)) 0))
 
 (defn-unit pos-x [unit] (.getX unit))
 (defn-unit pos-y [unit] (.getY unit))
@@ -33,18 +54,6 @@
       (> (Math/abs (vel-y unit 1.0)))
       (> (Math/abs (vel-z unit 1.0)))))
 
-(defn-unit get-name [unit] (.getName unit))
-
-(defn-unit get-id [unit] (if unit (.getID unit) -1))
-
-(defn-unit get-mana [unit] (.getMana unit))
-
-(defn-unit get-max-move [unit] (.getRemainingMove unit))
-
-(defn-unit get-remaining-move [unit] (.getRemainingMove unit))
-
-(defn-unit get-jump [unit] (.getJump unit))
-
 (defn-unit get-held-unit [unit]
   (let [id (.getHeldItemID unit)]
     (if (= -1 id) nil
@@ -59,17 +68,12 @@
   (> (get-remaining-move (active-unit)) no-move-threshold))
 
 (defn-unit has-attacked? [unit] (.hasAttacked unit))
-
 (defn-unit is-item? [unit] (.isItem unit))
-
 (defn-unit holding? [unit] (not (nil? (get-held-unit unit))))
 (defn-unit being-held? [unit] (.isBeingHeld unit))
-
 (defn-unit my-unit? [unit] (.isFriendly unit))
-
 (defn-unit is-marona? [unit] (= (get-name unit) "Marona"))
-
-(defn dead? [unit] (= 0 (.getCurrentHp unit)))
+(defn dead? [unit] (= 0 (.getCurrentHP unit)))
 
 (defn-unit dump [unit] (.dump unit))
 
@@ -148,6 +152,14 @@
 (defn-unit get-sp-affinity [unit]
   (zipmap (vals skill-sp-kws) (.getSpAffinity unit)))
 
+(defn-unit full-sp? [unit]
+  (let [maxes (vals (get-max-sp unit))
+        currents (vals (get-sp unit))]
+    (every? true? (map = maxes currents))))
+
+(defn-unit needs-heal? [unit]
+  (not (full-sp? unit)))
+
 (defn skill-in-range?
   "Given a skill, an attacking unit and a target unit, returns true if the skill's range and the unit's remaining move
   can reach the target."
@@ -168,9 +180,6 @@
                    (within-cylinder? target-pos my-pos (+ x-max move) vert-range))
       :triangle false)))
 
-(defn-unit in-range? [unit target]
-  (some (filter (partial skill-in-range? unit target)) (get-skills)))
-
 (defn-unit should-use-skill? [unit skill]
   (and (or (is-spherical? skill)
            (is-single-target? skill))
@@ -185,11 +194,6 @@
              (partial should-use-skill? unit))
             skills)))
 
-(defn in?
-  "true if coll contains elm"
-  [coll elm]
-  (some #(= elm %) coll))
-
 (defn-unit has-skill? [unit skill-kw]
   (let [skill-ids (map skill-id (get-all-skills unit))
         id (skill-kw skill-type-ids)]
@@ -198,6 +202,9 @@
 (defn-unit skills-reaching [unit target]
   (let [skills (usable-skills unit)]
     (filter (partial skill-in-range? unit target) skills)))
+
+(defn-unit in-range? [unit target]
+  (not (empty? (skills-reaching unit target))))
 
 (defn dist-unit
   ([a b]          (dist (pos-x a) (pos-z a)
@@ -312,18 +319,18 @@
         cursor-units (units-under-cursor)]
     (if (nil? selected)
       (recur target [type])
+
       (when (and (not= (get-id selected) id)
                  (not (in? (map get-id cursor-units) id)))
-        (println "not in selected or nearby")
         (let [held (get-held-unit selected)
               cursor-held-ids (map (comp get-id get-held-unit) cursor-units)]
-          (println id (map get-id cursor-units) (get-id selected) cursor-held-ids)
+
           (when-not (nil? held)
             (println (get-id held)))
+
           (when (and (or (nil? held)
                          (not= (get-id held) id))
                      (not (in? cursor-held-ids id)))
-
             (do (println "not in cursor held or held")
                 (recur target [type]))))))))
 
@@ -346,9 +353,7 @@
             (> current target) (+ target current)
             :else              (- target current))]
       (play-input
-       (apply concat
-              (concat
-               (repeat presses (press :select 10))))))))
+       (vec (repeat presses [:select 10])))))) 
 
 (defn select-unit
   "Moves the cursor to and selects the given unit."
@@ -356,3 +361,11 @@
   (move-to-unit unit)
   (wait 10)
   (select-unit-in-cursor unit))
+
+(defn print-units
+  ([] (print-units (units)))
+  ([units]
+   (print (clojure.string/join "\n" (map str units)))))
+
+(defn print-my-units []
+  (print-units (my-units)))

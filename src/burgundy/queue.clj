@@ -14,6 +14,10 @@
         value
         (recur)))))
 
+(defmacro with-api
+  [& body]
+  `(do (swap! repl-command conj (fn [] (do ~@body)))))
+
 (defmacro cmd
   "For REPL use. Wrap a form to be executed during the gameUpdate
   loop."

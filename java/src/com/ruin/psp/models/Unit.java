@@ -40,11 +40,11 @@ public class Unit {
     private float velZ;
 
     private int currentHP;
-    private short lv;
+    private int level;
 
     private String name;
 
-    private short unitType;
+    private short classType;
 
     private int statHP;
     private int statAtk;
@@ -65,7 +65,7 @@ public class Unit {
     private boolean isBeingHeld;
     private int team;
 
-    private float maxMove;
+    private float move;
     private float remainingMove;
     private int jump;
     private int remove;
@@ -77,6 +77,7 @@ public class Unit {
     // if a unit is friendly, this points to the memory location of that unit's stats
     private int friendlyUnitOffset;
 
+    private Title title;
     private ArrayList<Skill> skills;
 
     public Unit(byte[] data) {
@@ -99,8 +100,6 @@ public class Unit {
         this.velY = bb.getFloat(0x84);
         this.velZ = bb.getFloat(0x88);
 
-        this.currentHP = bb.getInt(0x5AC);
-
         short teamFlagA = bb.getShort(0x142);
         short teamFlagB = bb.getShort(0x144);
         short teamFlagC = bb.getShort(0x146);
@@ -113,8 +112,8 @@ public class Unit {
             this.team = TEAM_FRIENDLY;
         }
 
-        this.unitType = bb.getShort(0x20);
-        this.lv = bb.getShort(0x500);
+        this.classType = bb.getShort(0x20);
+        this.level = bb.getShort(0x500) & 0xFFFF;
 
         this.isItem = bb.getShort(0x14a) == 1;
 
@@ -123,43 +122,10 @@ public class Unit {
         if(this.isFriendly()) {
             this.friendlyUnitOffset = bb.getInt(0x574) - 0x8800000;
             // 0x57c : pointer to held item's info
+            byte[] unitStatusDat = PSP.readRam(this.friendlyUnitOffset, 704);
 
-            if(this.friendlyUnitOffset != 0) {
-                this.mana = PSP.readRAMU32(this.friendlyUnitOffset + 148);
-
-                byte[] nameData = PSP.readRam(this.friendlyUnitOffset + 16, 23);
-                this.name = PSP.getStringAt(nameData);
-
-                this.numSkills = PSP.readRAMU16(this.friendlyUnitOffset + 616);
-
-                this.skills = new ArrayList<Skill>();
-                for(int i = 0; i < this.numSkills; i++) {
-                    int skillOffset = 0xF8 + (0x8 * i);
-                    byte[] skillData = PSP.readRam(this.friendlyUnitOffset + skillOffset, 8);
-                    Skill skill = new Skill(skillData);
-                    skills.add(skill);
-                }
-
-            }
-
-            int spOffset = this.friendlyUnitOffset + 0x1f7;
-            this.sp = new short[7];
-            this.spMax = new short[7];
-            this.spAffinity = new short[7];
-            for(int i = 0; i < 7; i++) {
-                int offset = spOffset + (0xC * i);
-                byte[] spRam = PSP.readRam(offset, 0xC);
-                ByteBuffer spBuffer = ByteBuffer.wrap(spRam);
-                bb.order(ByteOrder.LITTLE_ENDIAN);
-
-                short spDat = spBuffer.getShort(0x0);
-                short spMaxDat = spBuffer.getShort(0x2);
-                short spAffinityDat = spBuffer.getShort(0x4);
-                this.sp[i] = spDat;
-                this.spMax[i] = spMaxDat;
-                this.spAffinity[i] = spAffinityDat;
-            }
-
+            UnitStatus unitStatus = new UnitStatus(unitStatusDat);
+            loadFromUnitStatus(unitStatus);
         }
         else {
             // get 27 bytes at 0x2B8
@@ -167,6 +133,12 @@ public class Unit {
             bb.position(0x2B8);
             bb.get(nameData);
             this.name = PSP.getStringAt(nameData);
+
+            byte[] titleData = new byte[Title.titleSize];
+            bb.position(0x53C);
+            bb.get(titleData);
+            this.title = new Title(titleData);
+
         }
 
         int itemOffset = bb.getInt(0x57c);
@@ -176,9 +148,7 @@ public class Unit {
             this.heldID = -1;
         }
 
-        this.isVisible = bb.get(0x17F) == 1;
-
-        this.isOB = bb.get(0x184) == 1;
+        this.currentHP = bb.getInt(0x5AC);
 
         this.statHP = bb.getInt(0xEC);
         this.statAtk = bb.getInt(0x594);
@@ -187,10 +157,14 @@ public class Unit {
         this.statRes = bb.getInt(0x594 + 12);
         this.statSpd = bb.getInt(0x594 + 16);
 
+        this.isVisible = bb.get(0x17F) == 1;
+
+        this.isOB = bb.get(0x184) == 1;
+
         this.isBeingHeld = bb.getInt(0x180) == 0;
 
         this.jump = bb.getInt(0x81a);
-        this.maxMove = bb.getFloat(0x600);
+        this.move = bb.getFloat(0x600);
         this.remainingMove = bb.getFloat(0x604);
         this.remove = bb.getShort(0x5B2);
 
@@ -199,8 +173,36 @@ public class Unit {
         float rotation = bb.getFloat(0x15C);
     }
 
-    public void update(byte[] data) {
+    private void loadFromUnitStatus(UnitStatus unitStatus) {
+        this.mana = unitStatus.getMana();
+        this.name = unitStatus.getName();
+        this.numSkills = unitStatus.getNumSkills();
 
+        this.title = unitStatus.getTitle();
+        this.skills = unitStatus.getSkills();
+        this.level = unitStatus.getLevel();
+
+        this.sp = unitStatus.getSp();
+        this.spMax = unitStatus.getMaxSp();
+        this.spAffinity = unitStatus.getSpAffinity();
+
+        this.currentHP = unitStatus.getCurrentHP();
+        this.statHP = unitStatus.getHP();
+        this.statAtk = unitStatus.getAtk();
+        this.statDef = unitStatus.getDef();
+        this.statInt = unitStatus.getInt();
+        this.statRes = unitStatus.getRes();
+        this.statSpd = unitStatus.getSpd();
+
+        this.jump = unitStatus.getJump();
+        this.move = unitStatus.getMove();
+        this.data = unitStatus.getData();
+
+        this.heldID = unitStatus.getHeldID();
+    }
+
+    public Unit(UnitStatus status) {
+        loadFromUnitStatus(status);
     }
 
     public int getID() {
@@ -235,11 +237,11 @@ public class Unit {
         return velZ;
     }
 
-    public int getCurrentHp() {
+    public int getCurrentHP() {
         return currentHP;
     }
 
-    public int getMaxHp() {
+    public int getHP() {
         return statHP;
     }
 
@@ -263,8 +265,12 @@ public class Unit {
         return statSpd;
     }
 
+    public int getClassType() {
+        return classType;
+    }
+
     public float getMaxMove() {
-        return maxMove;
+        return move;
     }
 
     public float getRemainingMove() {
@@ -343,6 +349,9 @@ public class Unit {
         return Collections.unmodifiableList(this.skills);
     }
 
+    public Title getTitle() {
+        return title;
+    }
 
     public boolean isOB() {
         return isOB;
@@ -360,13 +369,6 @@ public class Unit {
             FileOutputStream fos = new FileOutputStream("/home/prin/dump/" + this.name + ".dump");
             fos.write(this.data);
             fos.close();
-            if(this.friendlyUnitOffset != 0) {
-                byte[] detailData = PSP.readRam(this.friendlyUnitOffset, 704);
-
-                fos = new FileOutputStream("/home/prin/dump/" + this.name + "_detail.dump");
-                fos.write(detailData);
-                fos.close();
-            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -378,7 +380,7 @@ public class Unit {
         s = s + "Item: " + this.isItem + "\n";
         s = s + "Ally: " + this.isFriendly() + "\n";
         s = s + this.x + " " + this.y + " " + this.z + "\n";
-        s = s + "Lv: " + this.lv + "\n";
+        s = s + "Level: " + this.level + "\n";
         s = s + "CHP: " + this.currentHP + "\n";
         s = s + "MHP: " + this.statHP + "\n";
         s = s + "Atk: " + this.statAtk + "\n";

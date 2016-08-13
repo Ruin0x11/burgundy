@@ -7,7 +7,10 @@
             [burgundy.queue :refer :all]
             [clojure.set :refer [intersection]]))
 
-(def battle-state (ref {:summoned-units 0 :attempted-skills []} ))
+(def units-to-summon 6)
+
+(def battle-state (ref {:confined-units 0 :attempted-skills []
+                        :attempted-confine-targets []} ))
 
 (def-task end-action-task []
   :desc ["Ending action."]
@@ -30,10 +33,11 @@
   :priority 1
   :goal-state (not (stage-started?))
   :action (do (start-stage)
-              (.loadSkillTypes api)
+              (load-skill-types)
               (dosync
-               (commute battle-state assoc-in [:summoned-units] (summoned-units))
+               (commute battle-state assoc-in [:confined-units] (confined-units))
                (commute battle-state assoc-in [:attempted-skills] [])
+               (commute battle-state assoc-in [:attempted-confine-targets] [])
                (commute battle-state assoc-in [:enemy-units] (count (enemy-units)))
 
                )))
@@ -48,20 +52,25 @@
   :desc ["Confine unit " id " to " (get-name target)]
   :priority 10
   :max-attempts 3
-  :goal-state (> (summoned-units) (:summoned-units @battle-state))
+  :goal-state (> (confined-units) units-to-summon)
   :action (confine-unit target id)
   :on-success (dosync
-               (commute battle-state assoc-in [:summoned-units] (summoned-units))))
+               (commute battle-state assoc-in [:confined-units] (confined-units))))
 
 (def-task confine-closest-task [id]
   :desc ["Confinining unit " id " to a nearby item."]
   :priority 10
   :max-attempts 3
-  :goal-state (not (nil? result))
-  :action (let [targets (confine-targets)
+  :goal-state (> (confined-units) (:confined-units @battle-state))
+  :action (let [all-targets (confine-targets)
+                attempted (:attempted-confine-targets @battle-state)
+                targets (remove #(some #{(get-id %)} attempted) all-targets)
                 selected (closest targets)]
-            selected)
-  :on-success (add-task (confine-task 0 result))
+            (confine-unit selected id)
+            (dosync
+             (commute battle-state assoc-in [:attempted-confine-targets] (conj attempted (get-id selected)))))
+  :on-success (dosync
+               (commute battle-state assoc-in [:confined-units] (confined-units)))
   )
 
 (def-task confine-near-task [id target]
@@ -76,6 +85,18 @@
             (println "Selected " (get-name selected))
             selected)
   :on-success (add-task (confine-task 0 result)))
+
+(defn attack-action [target]
+  (let [attempted (:attempted-skills @battle-state)
+        skills (remove #(some #{(skill-id %)} attempted) (skills-reaching target))
+        skill (skill-pos-for-target target skills)]
+    (println attempted)
+    (println (map skill-id skills))
+    (when-not (empty? skills)
+      (attack target skill (get-all-skills))
+      (println (skill-name skill))
+      (dosync
+       (commute battle-state assoc-in [:attempted-skills] (conj attempted (skill-id skill)))))))
 
 (def-task attack-task [target]
   :desc ["Attacking " (get-name target)]
@@ -121,7 +142,7 @@
     :else
     (do
       (when (and (is-marona?)
-                 (< (summoned-units) 6))
+                 (< (confined-units) 6))
         (add-task (confine-closest-task 0) battle-tasks 3))
       (when (> (count (enemy-units)) 0)
         (add-task (attack-nearest-task)))
