@@ -2,6 +2,7 @@
   (:require [burgundy.interop :refer :all]
             [burgundy.unit :refer :all]
             [burgundy.dungeon :refer :all]
+            [burgundy.charagen :refer :all]
             [burgundy.isle :refer :all]
             [burgundy.menu :refer :all]
             [alter-ego.core :refer :all])
@@ -11,16 +12,35 @@
   ":team-members - units that will not be deleted
    :tags - allows selecting targets of actions, like what objects to fuse
    :goal - the thing the AI is trying to do"
-  (ref {:team-members [] :tags {}}))
+  (ref {:team-members [] :tags {} :goals []}))
 
-(defn tag-unit [unit-or-identifier tag]
-  (let [identifier (if (instance? Unit unit-or-identifier) (get-identifier unit-or-identifier) unit-or-identifier)]
+(defn tag-unit [unit-or-pos tag]
+  (let [pos (if (instance? Unit unit-or-pos) (menu-pos unit-or-pos) unit-or-pos)]
     (dosync
-     (commute logic-state assoc-in [:tags identifier] tag))))
+     (commute logic-state assoc-in [:tags pos] tag))))
 
-(defn get-unit-tag [unit-or-identifier]
-  (let [identifier (if (instance? Unit unit-or-identifier) (get-identifier unit-or-identifier) unit-or-identifier)] 
-    (get-in @logic-state [:tags identifier])))
+(defn get-unit-tag [unit-or-pos]
+  (let [pos (if (instance? Unit unit-or-pos) (menu-pos unit-or-pos) unit-or-pos)]
+    (get-in @logic-state [:tags pos])))
+
+(defn goals []
+  (get-in @logic-state [:goals]))
+
+(defn current-goal []
+  (first (goals)))
+
+(defn add-goal [goal]
+  (let [goals (goals)]
+    (dosync
+     (commute logic-state assoc-in [:goals] (cons goal goals)))))
+
+(defn update-goal [tag val]
+  (dosync
+   (commut logic-state assoc-in [:goals 1 tag] val)))
+
+(defn end-goal []
+  (dosync
+   (commute logic-state update-in [:goals] next)))
 
 (defn team-members []
   (map get-island-unit (:team-members @logic-state)))
@@ -34,6 +54,9 @@
 (defn units-with-role [role]
   (filter #(= role (:role (val %))) (:tags @logic-state)))
 
+(defn unit-with-role [role]
+  (first (units-with-role role)))
+
 (defn nobody-doing? [role]
   (empty? (units-with-role role)))
 
@@ -43,12 +66,6 @@
 
 (defn should-heal? []
   (some #{true} (map needs-heal? (island-units))))
-
-(defn latest-chara []
-  (last (remove is-item? (island-units))))
-
-(defn latest-item []
-  (last (filter is-item? (island-units))))
 
 (defn create-character-with-tag [class tag]
   (when (create-character class 0)
@@ -79,27 +96,41 @@
   ;;   when 20 units have been killed, end goal
   )
 
-(defn obtain-passive-tree [identifier skill-kw]
-  (let [fusionist-lv (get-level (member-with-class :fusionist))
-        ]
-   (？ "Obtain Passive Skill"
-       ;; create soldier
-       (action "Create Soldier" (when (nobody-doing? :fusion-target)
-                                 (create-character-with-tag :soldier {:role :fusion-target})
-                                 true))
+(defn get-mana-goal [target amount])
 
-  ;; if not enough mana for fusion:
-       (action "Get Mana" )
-       ))
-  ;;   go to failure dungeon
-  ;;   take home high mana items
-  ;;   fuse to soldier
-  ;; create target unit
-  ;; fuse passive to soldier
-  ;; if passive level = 99:
-  ;;   ensure mana, as above
-  ;;   fuse to target, end goal
-  )
+(defn grind-passive-tree [identifier skill-kw]
+  (let [fusionist-lv (get-level (member-with-class :fusionist))
+        fusion-target (unit-with-role :fusion-target)
+        fusion-material (unit-with-role :fusion-material)]
+    (？ "Obtain Passive Skill"
+        (≫ "Attempt Fusion"
+         (action "Level = 99?" (let [skill (get-skill fusion-material skill-kw)]
+                                 (when skill
+                                   (= 99 (get-level)))))
+         (action "Enough Mana?"
+                 (let [diff (fusion-cost-diff fusion-target fusion-material skill-kw :sss fusionist-lv)]
+                   (when (> diff 0)
+                     (add-goal {:type :get-mana :target target-id :amount diff})
+                     false)))
+         (action "Fuse" #_(fuse fusion-target fusion-material :skills [:return])
+                 (end-goal)))
+        (？ "Fuse to soldier"
+            (action "Create Soldier" (when (nil? fusion-target)
+                                       (create-character-with-tag :soldier {:role :fusion-target})
+                                       true))
+
+            (action "Create Target" (when (nil? fusion-material)
+                                      (let [material-class (skill-kw passive-skill-classes)]
+                                        (create-character-with-tag material-class {:role :fusion-target}))
+                                      true))
+            (≫ "Attempt Fusion"
+             (action "Enough Mana?"
+                     (let [diff (fusion-cost-diff fusion-target fusion-material skill-kw :sss fusionist-lv)]
+                       (when (> diff 0)
+                         (add-goal {:type :get-mana :target target-id :amount diff})
+                         false)))
+             (action "Fuse" #_(fuse fusion-target fusion-material :skills [:return])
+                     (end-goal)))))))
 
 
 (defn dungeon-tree [dungeon-type]
@@ -115,6 +146,11 @@
       (action "Go to Dungeon"
               (go-to-dungeon (count (dungeons)))
               true)))
+
+(defn choose-goal-tree []
+  (let [goal (current-goal)]
+   (case (:type goal)
+     :grind-passive (grind-passive-tree (:target goal) (:skill goal)))))
 
 (defn island-tree []
   (？ "Island Tree"
@@ -148,9 +184,5 @@
       (≫ "Battle"
        (battle-tree))))
 
-(defn assert-assumptions []
-  (assert (empty? (dups (map get-identifier (island-units))))))
-
 (defn step-tree []
-  (assert-assumptions)
   (exec (root)))

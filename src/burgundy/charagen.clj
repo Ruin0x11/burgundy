@@ -5,8 +5,13 @@
              [burgundy.unit :refer :all]))
 
 (def passive-skill-classes
-  {:big-bang :titlist
-   :parting-gift :death-corgi})
+  {:big-bang      :titlist
+   :parting-gift  :death-corgi
+   :exp-riser     :dungeonmonk
+   :mana-monger   :fusionist
+   :made-of-money :merchant
+   :healing-birth :healer
+   :healing-steps :knight})
 
 (defn soul-with-title [title]
   (let [units (neutral-units)

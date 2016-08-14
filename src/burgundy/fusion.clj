@@ -1,5 +1,7 @@
 (ns burgundy.fusion
   (:require [burgundy.interop :refer :all]
+            [burgundy.unit :refer :all]
+            [burgundy.menu :refer :all]
             [burgundy.skill :refer :all]))
 
 (def fusion-compat-modifiers
@@ -21,3 +23,28 @@
         material-lvl (get-level material)
         penalty (/ (+ target-lvl material-lvl) (* 2 (+ fusionist-lv 1)))]
     (* skill-cost compatibility penalty)))
+
+(defn fusion-cost-diff [target material skill-kw compat fusionist-lv]
+  (let [skill (get-skill-type (skill-kw skill-type-ids))
+        cost (skill-fusion-cost target material skill :sss fusionist-lv)
+        target-mana (get-mana target)
+        diff (- target-mana cost)]
+    diff))
+
+(defn select-fusion-units [a b]
+  (let [pos-a (menu-pos a)
+        pos-b (menu-pos b)
+        chara-count (count (island-charas))
+        item-count (count (island-items))
+        switch-first (and (is-item? b) (not (is-item? a)))
+        switch-second (or switch-first
+                          (and (is-item? a) (not (is-item? b))))
+        size-a (if (is-item? a) item-count chara-count)
+        size-b (if (is-item? b) item-count chara-count)]
+    (play-input
+     [(if switch-first △ [:wait]) [:wait 10]
+      (menu-key-seq (fusion-menu-cursor) pos-a :fusion size-a)
+      [:wait 10]×
+      (if switch-second △ [:wait]) [:wait 10]
+      (menu-key-seq (fusion-menu-cursor) pos-b :fusion size-b)
+      [:wait 10]×])))

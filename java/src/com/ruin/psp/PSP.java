@@ -251,6 +251,10 @@ public class PSP {
         return getCursorPos(0x0012DE9C, 0x0012DEA0);
     }
 
+    public static int getFusionMenuCursorPos() {
+        return getCursorPos(0x0012DEA4, 0x0012DEA8);
+    }
+
     public static long getBol() {
         return readRAMU32(0x1545E80);
     }
@@ -331,7 +335,7 @@ public class PSP {
         return PSP.readRAMU16(0x0012F384);
     }
 
-    private HashMap<Integer, Unit> islandUnits = new LinkedHashMap<Integer, Unit>();
+    private ArrayList<Unit> islandUnits = new ArrayList<Unit>();
     private HashMap<Integer, Unit> units = new HashMap<Integer, Unit>();
     private ArrayList<Unit> friendlyUnits = new ArrayList<Unit>();
     private ArrayList<Unit> enemyUnits = new ArrayList<Unit>();
@@ -350,7 +354,7 @@ public class PSP {
             byte[] data = PSP.readRam(offset, UnitStatus.unitStatusSize);
             UnitStatus status = new UnitStatus(data);
             Unit unit = new Unit(status);
-            islandUnits.put(unit.getIdentifier(), unit);
+            islandUnits.add(unit);
         }
 
         int itemCount = PSP.readRAMU16(0x01573514);
@@ -359,7 +363,7 @@ public class PSP {
             byte[] data = PSP.readRam(offset, UnitStatus.unitStatusSize);
             UnitStatus status = new UnitStatus(data);
             Unit unit = new Unit(status);
-            islandUnits.put(unit.getIdentifier(), unit);
+            islandUnits.add(unit);
         }
     }
 
@@ -381,12 +385,15 @@ public class PSP {
     }
 
     public Collection<Dungeon> getDungeons() { return Collections.unmodifiableList(dungeons); }
-    public Collection<Unit> getIslandUnits() { return islandUnits.values(); }
-    public Unit getIslandUnit(int identifier) { return islandUnits.get(identifier); }
+    public Collection<Unit> getIslandUnits() { return Collections.unmodifiableList(islandUnits); }
 
     private HashMap<Integer, SkillType> skillTypes = new HashMap<Integer, SkillType>();
 
-    public SkillType getSkillType(int skillID) { return skillTypes.get(skillID); }
+    public Skill getSkill(Skill skill) {
+        skill.setType(skillTypes.get(skill.getID()));
+        return skill;
+    }
+
     public Collection<SkillType> getSkillTypes() { return skillTypes.values(); }
 
     private final int objectAddress = 0x01491090;

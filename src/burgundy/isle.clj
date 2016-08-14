@@ -74,13 +74,13 @@
 (defn summon [pos]
   (goto-marona)
   (play-input [× [:wait 30] × [:wait 10]
-               (menu-key-seq (marona-cursor) pos :marona 99)
+               (menu-key-seq (marona-menu-cursor) pos :marona 99)
                × [:wait 30]]))
 
 (defn store [pos]
   (goto-marona)
   (play-input [× [:wait 30] ↓ × [:wait 10]
-               (menu-key-seq (marona-cursor) pos :marona 99)
+               (menu-key-seq (marona-menu-cursor) pos :marona 99)
                × [:wait 30]]))
 
 (defn create-character

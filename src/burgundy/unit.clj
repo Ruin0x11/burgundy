@@ -44,6 +44,16 @@
 (defn-unit vel-y [unit] (.getVelY unit))
 (defn-unit vel-z [unit] (.getVelZ unit))
 
+(defn-unit is-item? [unit] (.isItem unit))
+
+(defn island-items [] (filter is-item? (island-units)))
+(defn island-charas [] (remove is-item? (island-units)))
+
+(defn latest-chara [] (last (island-charas)))
+(defn latest-item [] (last (island-items)))
+
+(defn-unit menu-pos [unit] (.getMenuPos unit))
+
 (defn-unit get-pos [unit]
   (let [x (pos-x unit)
         y (pos-y unit)
@@ -63,21 +73,20 @@
     (if (= -1 id) nil
         (get-unit id))))
 
-(defn has-moved? []
-  (not= (get-max-move (active-unit)) (get-remaining-move (active-unit))))
-
-(def no-move-threshold 5.0)
-
-(defn has-move-remaining? []
-  (> (get-remaining-move (active-unit)) no-move-threshold))
-
 (defn-unit has-attacked? [unit] (.hasAttacked unit))
-(defn-unit is-item? [unit] (.isItem unit))
 (defn-unit holding? [unit] (not (nil? (get-held-unit unit))))
 (defn-unit being-held? [unit] (.isBeingHeld unit))
 (defn-unit my-unit? [unit] (.isFriendly unit))
 (defn-unit is-marona? [unit] (= (get-name unit) "Marona"))
 (defn dead? [unit] (= 0 (.getCurrentHP unit)))
+
+(def no-move-threshold 5.0)
+
+(defn has-moved? []
+  (not= (get-max-move (active-unit)) (get-remaining-move (active-unit))))
+
+(defn has-move-remaining? []
+  (> (get-remaining-move (active-unit)) no-move-threshold))
 
 (defn-unit dump [unit] (.dump unit))
 
@@ -100,7 +109,7 @@
 ;; returns all skills, including passives and combos
 ;; which may not be usable at the time
 (defn-unit get-skills [unit]
-  (.getSkills unit))
+  (map #(.getSkill api %) (.getSkills unit)))
 
 (defn-unit get-usable-skills [unit]
   (let [skills (get-skills unit)
@@ -108,8 +117,7 @@
         holding? (holding? unit)
         being-held? (being-held? unit)
         held-chara? (and (not (is-item? unit))
-                         being-held?)
-        ]
+                         being-held?)]
     (as-> actives s
       (if held-chara? s (remove combo-skill? s))
       (if (or holding? being-held?) (remove unarmed-skill? s) (remove armed-skill? s)))))
@@ -146,6 +154,13 @@
                                 (when (holding? unit)
                                   (get-usable-skills (get-held-unit unit))))))
 
+(defn-unit get-skill [unit skill-kw]
+  (let [skills (get-skills unit)
+        kws (map skill-keyword skills)
+        idx (.indexOf kws skill-kw)]
+    (when-not (= -1 idx)
+      (nth skills idx))))
+
 (defn get-skill-pos [skill skills]
   (let [skill-ids (map skill-id skills)
         id (skill-id skill)]
@@ -171,20 +186,20 @@
 (defn skill-in-range?
   "Given a skill, an attacking unit and a target unit, returns true if the skill's range and the unit's remaining move
   can reach the target."
-  [unit target skill-or-id]
-  (let [[x-min x-max] (skill-range-horizontal skill-or-id)
-        vert-range (skill-range-vertical skill-or-id)
-        {:keys [shape range]} (skill-details skill-or-id)
+  [unit target skill]
+  (let [[x-min x-max] (skill-range-horizontal skill)
+        vert-range (skill-range-vertical skill)
+        {:keys [shape range]} (skill-details skill)
         my-pos (get-pos unit)
         target-pos (get-pos target)
         move (get-remaining-move unit)]
     ;; (println (get-name unit) my-pos target-pos shape range vert-range x-min x-max)
-    ;; (println (skill-name skill-or-id))
+    ;; (println (skill-name skill))
 
     (case shape
       :sphere (within-cylinder? target-pos my-pos (+ x-max move) vert-range)
       ;;TODO: find better metric
-      :column (and (is-single-target? skill-or-id)
+      :column (and (is-single-target? skill)
                    (within-cylinder? target-pos my-pos (+ x-max move) vert-range))
       :triangle false)))
 

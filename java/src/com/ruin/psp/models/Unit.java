@@ -80,6 +80,8 @@ public class Unit {
     // if a unit is friendly, this points to the memory location of that unit's stats
     private int friendlyUnitOffset;
 
+    private int menuPos;
+
     private Title title;
     private ArrayList<Skill> skills;
 
@@ -206,6 +208,7 @@ public class Unit {
         this.data = unitStatus.getData();
 
         this.isItem = unitStatus.isItem();
+        this.menuPos = unitStatus.getMenuPos();
         this.heldID = unitStatus.getHeldID();
     }
 
@@ -378,6 +381,10 @@ public class Unit {
 
     public boolean isDead() {
         return currentHP == 0;
+    }
+
+    public int getMenuPos() {
+        return menuPos;
     }
 
     public void dump() {

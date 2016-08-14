@@ -46,6 +46,8 @@ public class UnitStatus {
 
     private short heldID;
 
+    private byte menuPos;
+
     private Title title;
     private ArrayList<Skill> skills;
 
@@ -55,7 +57,7 @@ public class UnitStatus {
 
         this.data = data;
 
-        this.identifier = bb.getInt(0x25B);
+        this.identifier = bb.getInt(0xE8);
 
         byte[] nameData = new byte[23];
         bb.position(0x10);
@@ -119,6 +121,12 @@ public class UnitStatus {
 
         this.isItem = bb.get(0x27D) == 1;
 
+        this.menuPos = bb.get(0x26A);
+
+        if(this.isItem) {
+            this.menuPos -= 232;
+        }
+
         this.heldID = bb.getShort(0x266);
 
         if(!this.isItem && this.heldID != -1) {
@@ -151,9 +159,9 @@ public class UnitStatus {
     }
 
 
-    public void dump() {
+    public void dump(int i) {
         try {
-            FileOutputStream fos = new FileOutputStream("/home/prin/dump/" + this.name + "_detail.dump");
+            FileOutputStream fos = new FileOutputStream("/home/prin/dump/" + this.name + "" + i + "_detail.dump");
             fos.write(this.data);
             fos.close();
         } catch (Exception e) {
@@ -256,5 +264,9 @@ public class UnitStatus {
 
     public boolean isItem() {
         return isItem;
+    }
+
+    public int getMenuPos() {
+        return (int) menuPos & 0xFF;
     }
 }
