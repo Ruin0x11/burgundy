@@ -81,6 +81,10 @@ public class Title {
         return (int) move & 0xFF;
     }
 
+    public int getSteal() {
+        return (int) steal & 0xFF;
+    }
+
     public int getExp() {
         return (int) exp & 0xFF;
     }

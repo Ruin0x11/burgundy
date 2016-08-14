@@ -93,7 +93,7 @@ public class UnitStatus {
 
         this.move = bb.get(0x274);
         this.jump = bb.get(0x275);
-        this.steal = bb.get(0x285);
+        this.steal = bb.get(0x286);
 
         this.sp = new short[7];
         this.spMax = new short[7];
@@ -147,6 +147,7 @@ public class UnitStatus {
     public void applyTitle() {
         this.move += this.title.getMove();
         this.statHP = getTitleStat(statHP, title.getHP());
+        this.steal += this.title.getSteal();
     }
 
 
@@ -215,6 +216,10 @@ public class UnitStatus {
 
     public int getJump() {
         return (int) jump & 0xFF;
+    }
+
+    public int getSteal() {
+        return (int) steal & 0xFF;
     }
 
     public int getRemove() {

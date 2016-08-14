@@ -71,6 +71,7 @@ public class Unit {
     private float remainingMove;
     private int jump;
     private int remove;
+    private int steal;
     private int maxRemove;
     private boolean hasAttacked;
     private boolean isVisible;
@@ -101,6 +102,12 @@ public class Unit {
         this.velX = bb.getFloat(0x80);
         this.velY = bb.getFloat(0x84);
         this.velZ = bb.getFloat(0x88);
+
+        this.jump = bb.getInt(0x81a);
+        this.move = bb.getFloat(0x600);
+        this.steal = bb.getInt(0x52E);
+        this.remainingMove = bb.getFloat(0x604);
+        this.remove = bb.getShort(0x5B2);
 
         short teamFlagA = bb.getShort(0x142);
         short teamFlagB = bb.getShort(0x144);
@@ -165,11 +172,6 @@ public class Unit {
 
         this.isBeingHeld = bb.getInt(0x180) == 0;
 
-        this.jump = bb.getInt(0x81a);
-        this.move = bb.getFloat(0x600);
-        this.remainingMove = bb.getFloat(0x604);
-        this.remove = bb.getShort(0x5B2);
-
         this.hasAttacked = bb.getInt(0x848) == 1;
 
         float rotation = bb.getFloat(0x15C);
@@ -200,6 +202,7 @@ public class Unit {
 
         this.jump = unitStatus.getJump();
         this.move = unitStatus.getMove();
+        this.steal = unitStatus.getSteal();
         this.data = unitStatus.getData();
 
         this.isItem = unitStatus.isItem();
@@ -288,6 +291,10 @@ public class Unit {
 
     public int getJump() {
         return jump;
+    }
+
+    public int getSteal() {
+        return steal;
     }
 
     public int getRemove() {

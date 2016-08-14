@@ -2,7 +2,8 @@
   (:require [burgundy.interop :refer :all]
             [burgundy.types :refer :all]
             [burgundy.skill :refer :all])
-  (:import com.ruin.psp.PSP))
+  (:import com.ruin.psp.PSP)
+  (:import com.ruin.psp.models.Unit))
 
 (defmacro defn-unit
   "Define a function that either takes a unit as the first argument, or takes one less argument and is applied to the active unit."
@@ -15,10 +16,12 @@
 (defn-unit get-name [unit] (.getName unit))
 (defn-unit get-id [unit] (if unit (.getID unit) -1))
 (defn-unit get-identifier [unit] (.getIdentifier unit))
+(defn-unit get-level [unit] (.getLevel unit))
 (defn-unit get-mana [unit] (.getMana unit))
 (defn-unit get-max-move [unit] (.getRemainingMove unit))
 (defn-unit get-remaining-move [unit] (.getRemainingMove unit))
 (defn-unit get-jump [unit] (.getJump unit))
+(defn-unit get-steal [unit] (.getSteal unit))
 
 (defn-unit get-title [unit] (.getTitle unit))
 (defn-unit get-class [unit] (get class-type-kws (.getClassType unit)))
@@ -89,6 +92,10 @@
 
 (defn-unit unit-byte [unit n]
   (nth (unit-memory unit) n))
+
+(defn search-for-value [obj value]
+  (let [bytes (if (instance? Unit obj) (unit-memory obj) obj)]
+    (map (partial format "0x%04X") (positions #(= (byte value) %) bytes))))
 
 ;; returns all skills, including passives and combos
 ;; which may not be usable at the time
@@ -274,6 +281,20 @@
   (and (is-active?)
        (not (nil? (active-unit)))
        (not (is-in-air?))))
+
+(defn-unit can-steal? [unit item]
+  (let [my-lvl (get-level unit)
+        my-steal (get-steal unit)
+        item-lvl (get-level item)
+        item-steal (get-steal item)
+        raw-chance (- (* (/ my-steal 10) (+ 10 my-lvl))
+                      (* (/ item-steal 10) (+ 10 item-lvl)))
+        lvl-ratio (Math/ceil (/ item-lvl my-lvl))
+        chance-mod (cond
+                     (> lvl-ratio 8) 0
+                     (<= 3) 1
+                     :else (/ (- 1 lvl-ratio)))]
+    (>= (* raw-chance chance-mod) 100)))
 
 (def selection-dist 0.5)
 

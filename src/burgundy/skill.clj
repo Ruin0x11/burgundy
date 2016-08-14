@@ -58,6 +58,10 @@
   (let [skill (get-skill-type skill-or-id)]
     (get skill-sp-kws (.getSpType skill))))
 
+(defn skill-mana-cost [skill-or-id]
+  (let [skill (get-skill-type skill-or-id)]
+    (.getManaCost skill)))
+
 (defn print-skill [skill-or-id]
   (let [skill (get-skill-type skill-or-id)]
     (println (.getName skill)

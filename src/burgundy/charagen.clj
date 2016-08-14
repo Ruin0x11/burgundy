@@ -4,6 +4,10 @@
              [burgundy.types :refer :all]
              [burgundy.unit :refer :all]))
 
+(def passive-skill-classes
+  {:big-bang :titlist
+   :parting-gift :death-corgi})
+
 (defn soul-with-title [title]
   (let [units (neutral-units)
         titles (map (comp get-name get-title) units)]
