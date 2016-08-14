@@ -3,10 +3,36 @@
             [burgundy.unit :refer :all]
             [burgundy.dungeon :refer :all]
             [burgundy.charagen :refer :all]
+            [burgundy.fusion :refer :all]
             [burgundy.isle :refer :all]
             [burgundy.menu :refer :all]
             [alter-ego.core :refer :all])
   (:import (com.ruin.psp.models Unit)))
+
+;; create references to character positions
+;; when denoting the target of a goal, select a ref in the vector
+;; whenever a unit is removed or added, the position of the ref will shift accordingly
+;; that way the position can change inside goals
+(def item-refs (ref []))
+(def chara-refs (ref []))
+
+(defn make-unit-refs []
+  (ref-set item-refs (ref (vec (map ref (range 0 (count (island-items)))))))
+  (ref-set chara-refs (ref (vec (map ref (range 0 (count (island-charas))))))))
+
+(defn delete-element [vc pos]
+  (vec (concat
+         (subvec vc 0 pos)
+         (subvec vc (inc pos)))))
+
+(defn remove-unit [n refs]
+  (dosync
+   (ref-set (nth @refs n) nil)
+   (commute refs delete-element n))
+  (let [stale (drop n @refs)]
+    (dosync (dorun
+             (map #(commute % - 1) stale)))))
+
 
 (def logic-state
   ":team-members - units that will not be deleted
@@ -14,10 +40,15 @@
    :goal - the thing the AI is trying to do"
   (ref {:team-members [] :tags {} :goals []}))
 
-(defn tag-unit [unit-or-pos tag]
-  (let [pos (if (instance? Unit unit-or-pos) (menu-pos unit-or-pos) unit-or-pos)]
+(defn make-chara-refs []
+  (map ref (range 0 (count (island-charas)))))
+
+(defn tag-unit [unit tag]
+  (let [pos (menu-pos unit)
+        refs (if (is-item? unit) item-refs chara-refs)
+        unit-ref (nth refs pos)]
     (dosync
-     (commute logic-state assoc-in [:tags pos] tag))))
+     (commute logic-state assoc-in [:tags unit-ref] tag))))
 
 (defn get-unit-tag [unit-or-pos]
   (let [pos (if (instance? Unit unit-or-pos) (menu-pos unit-or-pos) unit-or-pos)]
@@ -36,14 +67,11 @@
 
 (defn update-goal [tag val]
   (dosync
-   (commut logic-state assoc-in [:goals 1 tag] val)))
+   (commute logic-state assoc-in [:goals 1 tag] val)))
 
 (defn end-goal []
   (dosync
    (commute logic-state update-in [:goals] next)))
-
-(defn team-members []
-  (map get-island-unit (:team-members @logic-state)))
 
 (defn member-with-class [class]
   (some #{class} (map get-class (team-members))))
@@ -110,7 +138,7 @@
          (action "Enough Mana?"
                  (let [diff (fusion-cost-diff fusion-target fusion-material skill-kw :sss fusionist-lv)]
                    (when (> diff 0)
-                     (add-goal {:type :get-mana :target target-id :amount diff})
+                     (add-goal {:type :get-mana :target 0 :amount diff})
                      false)))
          (action "Fuse" #_(fuse fusion-target fusion-material :skills [:return])
                  (end-goal)))
