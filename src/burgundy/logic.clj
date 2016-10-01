@@ -1,6 +1,7 @@
 (ns burgundy.logic
   (:require [burgundy.interop :refer :all]
             [burgundy.unit :refer :all]
+            [burgundy.skill :refer :all]
             [burgundy.dungeon :refer :all]
             [burgundy.charagen :refer :all]
             [burgundy.fusion :refer :all]
@@ -8,6 +9,15 @@
             [burgundy.menu :refer :all]
             [alter-ego.core :refer :all])
   (:import (com.ruin.psp.models Unit)))
+
+(defn retry
+  [tries f & args]
+  (let [res (apply f args)]
+    (if (and (not res) (= 0 tries))
+      false
+      (if (not res)
+        (recur (dec tries) f args)
+        res))))
 
 ;; create references to character positions
 ;; when denoting the target of a goal, select a ref in the vector
@@ -36,11 +46,19 @@
 (defn unit-from-ref [ref units]
   (nth units @ref))
 
+(defn ref-from-unit [unit refs]
+  (nth @refs (menu-pos unit)))
+
 (def logic-state
   ":team-members - units that will not be deleted
    :tags - allows selecting targets of actions, like what objects to fuse
    :goal - the thing the AI is trying to do"
   (ref {:team-members [] :tags {} :goals []}))
+
+(def battle-state
+  ":attempted-skills - skills that the current unit has tried and failed to apply
+   :attempted-confine-targets - items that the unit has failed to confine to"
+  (ref {:attempted-skills [] :attempted-confine-targets []}))
 
 (defn team-members []
   (map #(unit-from-ref % (island-charas)) (get-in @logic-state [:team-members])))
@@ -91,6 +109,7 @@
   (first (goals)))
 
 (defn add-goal [goal]
+  (println "ADDED GOAL: " + (:type goal))
   (let [goals (goals)]
     (dosync
      (commute logic-state assoc-in [:goals] (cons goal goals)))))
@@ -165,8 +184,12 @@
   ;;   when 20 units have been killed, end goal
   )
 
-(defn get-mana-goal [target amount]
-
+(defn get-mana-tree [target threshold]
+  ;; go to dungeon with highest level possible
+  ;; obtain items of highest mana
+  ;; until there are no more materials:
+  ;;   fuse material onto target, transferring mana
+  ;; when target mana >= threshold, end goal
   )
 
 (defn grind-passive-tree [identifier skill-kw]
@@ -184,17 +207,16 @@
                                         (create-character-with-tag material-class {:role :fusion-material}))
                                       true))
             (action "Fuse" (do
-                             (fuse-safe fusion-target fusion-material) 
-                             (end-goal)))
-            )
-        (≫ "Attempt Fusion"
+                             (fuse-safe fusion-target fusion-material)
+                             (end-goal))))
+        (≫ "Fuse to beneficiary"
          (action "Level = 99?" (let [skill (get-skill fusion-material skill-kw)]
                                  (when skill
-                                   (= 99 (get-level)))))
+                                   (= 99 (get-level skill)))))
          (action "Enough Mana?"
                  (let [diff (fusion-cost-diff fusion-target fusion-material skill-kw :sss fusionist-lv)]
                    (when (> diff 0)
-                     (add-goal {:type :get-mana :target 0 :amount diff})
+                     (add-goal {:type :get-mana :target (ref-from-unit fusion-target chara-refs) :threshold (+ (get-mana fusion-target) diff)})
                      false)))
          (action "Fuse" (do
                           #_(fuse-safe fusion-target fusion-material :skills [:return])
@@ -219,7 +241,8 @@
 (defn choose-goal-tree []
   (let [goal (current-goal)]
     (case (:type goal)
-      :grind-passive (grind-passive-tree (:target goal) (:skill goal)))))
+      :grind-passive (grind-passive-tree (:target goal) (:skill goal))
+      :get-mana (get-mana-tree (:target goal) (:threshold goal)))))
 
 (defn island-tree []
   (？ "Island Tree"
@@ -228,6 +251,45 @@
        (action "Heal party" (heal-party)
                true))
       (dungeon-tree perfect-title-dungeon)))
+
+(def units-to-confine 4)
+
+(defn confine-to-closest [id]
+  (let [all-targets (confine-targets)
+        attempted (:attempted-confine-targets @battle-state)
+        targets (remove #(some #{(get-id %)} attempted) all-targets)
+        selected (closest targets)]
+    (confine-unit selected id)
+    (dosync
+     (commute battle-state assoc-in [:attempted-confine-targets] (conj attempted (get-id selected))))))
+
+(defn confine-tree []
+  (≫ "Confine Tree"
+   (action "Units < Threshold?" (when (< (confined-unit-count) units-to-confine) true))
+   (action "Confine" (do
+                       (retry 3 confine-to-closest 0)
+                       true))))
+
+(defn attack-action [target]
+  (let [attempted (:attempted-skills @battle-state)
+        skills (remove #(some #{(skill-id %)} attempted) (skills-reaching target))
+        skill (skill-pos-for-target target skills)]
+    (println attempted)
+    (println (map skill-id skills))
+    (when-not (empty? skills)
+      (attack target skill (get-all-skills))
+      (println (skill-name skill))
+      (dosync
+       (commute battle-state assoc-in [:attempted-skills] (conj attempted (skill-id skill)))))))
+
+(defn get-nearest-target []
+  (let [target (closest (enemy-units))]
+    (cond (too-close? target)         (move-unit target 20.0 :away)
+          (not (in-range? target)) (move-unit target 10.0))
+    (if (in-range? target)
+      target nil)))
+
+(defn attack-tree [])
 
 (defn battle-tree []
   (？ "Battle Tree"
@@ -241,7 +303,7 @@
       (action "Stage clear?" (when (stage-clear?)
                                (finish-stage)
                                true))
-      (action "Confine" true)
+      (confine-tree)
       (action "Attack" true))
   )
 

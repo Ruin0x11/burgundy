@@ -113,5 +113,5 @@
   (move-to-unit (unit-by-name "Miyu") :island)
   (play-input [× [:wait 50] × [:wait 10]])
   (select-fusion-units target material)
-  (play-input [↑ × × [:wait 120] ○])
+  (play-input [↑ × × [:wait 100] ○])
   true)

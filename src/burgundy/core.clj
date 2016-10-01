@@ -45,13 +45,11 @@
 
 (defn run-once []
   (save-state "temp")
-  (step)
-  (run-battle-engine))
+  (step))
 
 (defn rewind-run []
   (load-state "temp")
-  (step)
-  (run-battle-engine))
+  (step))
 
 (defn rewind []
   (load-state "temp"))
@@ -88,7 +86,7 @@
 
     (restart!)
     (PSP/setFramelimit false)
-    (load-state "55")
+    (load-state "tako")
     (step)
     (step)
     (continue!)

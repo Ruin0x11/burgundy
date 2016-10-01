@@ -220,10 +220,12 @@
        [×
         (menu-key-seq (battle-confine-cursor) n :confine)
         × ○
-        [:wait 10]]))
+        [:wait 10]])
+      true)
     (do
       (cancel)
-      (cancel))))
+      (cancel)
+      false)))
 
 (defn intrusion-stage []
   (play-input
