@@ -28,6 +28,7 @@ public class UnitStatus {
     private int statSpd;
 
     private int identifier;
+    private short classType;
 
     private int numSkills;
 
@@ -92,6 +93,7 @@ public class UnitStatus {
         this.statSpd = bb.getInt(0x84);
 
         this.level = bb.getShort(0x258);
+        this.classType = bb.getShort(0x284);
 
         this.move = bb.get(0x274);
         this.jump = bb.get(0x275);
@@ -184,6 +186,10 @@ public class UnitStatus {
 
     public int getLevel() {
         return (int) level & 0xFFFF;
+    }
+
+    public short getClassType() {
+        return classType;
     }
 
     public int getHeldID() {

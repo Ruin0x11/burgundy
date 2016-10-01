@@ -5,6 +5,7 @@
             [burgundy.dungeon :refer :all]
             [burgundy.charagen :refer :all]
             [burgundy.types :refer :all]
+            [burgundy.fusion :refer :all]
             [burgundy.menu :refer :all]))
 
 (def island-dist 7.0)
@@ -99,5 +100,16 @@
            (do
              (play-input [(menu-key-seq 0 pos :charagen soul-count)
                           (make-key-seq ↑ (- exp 1))
-                          × [:start] × ↑ × [:wait 40]])
+                          × [:start] × ↑ × [:wait 80]])
              true)))))))
+
+(defn banish [unit]
+  (pick-up unit)
+  (goto-marona)
+  (play-input [× [:wait 20] × [:wait 20] × [:wait 100]]))
+
+(defn fuse [target material]
+  (move-to-unit (unit-by-name "Miyu") :island)
+  (play-input [× [:wait 50] × [:wait 10]])
+  (select-fusion-units target material)
+  (play-input [↑ × × [:wait 120] ○]))

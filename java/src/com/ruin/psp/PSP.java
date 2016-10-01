@@ -251,8 +251,18 @@ public class PSP {
         return getCursorPos(0x0012DE9C, 0x0012DEA0);
     }
 
+    /**
+     * Cursor position when selecting first fusion target.
+     */
     public static int getFusionMenuCursorPos() {
-        return getCursorPos(0x0012DEA4, 0x0012DEA8);
+        return getCursorPos(0x0012DEA4, 0x0012DEC4);
+    }
+
+    /**
+     * Cursor position when selecting second fusion target.
+     */
+    public static int getFusionMenuSecondCursorPos() {
+        return getCursorPos(0x0012DEA8, 0x0012DEC8);
     }
 
     public static long getBol() {

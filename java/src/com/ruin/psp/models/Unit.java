@@ -181,7 +181,7 @@ public class Unit {
 
     private void loadFromUnitStatus(UnitStatus unitStatus) {
         this.identifier = unitStatus.getIdentifier();
-        
+
         this.mana = unitStatus.getMana();
         this.name = unitStatus.getName();
         this.numSkills = unitStatus.getNumSkills();
@@ -189,6 +189,7 @@ public class Unit {
         this.title = unitStatus.getTitle();
         this.skills = unitStatus.getSkills();
         this.level = unitStatus.getLevel();
+        this.classType = unitStatus.getClassType();
 
         this.sp = unitStatus.getSp();
         this.spMax = unitStatus.getMaxSp();
@@ -226,6 +227,10 @@ public class Unit {
 
     public String getName() {
         return name;
+    }
+
+    public int getLevel() {
+        return (int) level & 0xFFFF;
     }
 
     public float getX() {

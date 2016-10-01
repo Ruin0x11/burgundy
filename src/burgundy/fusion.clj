@@ -36,15 +36,16 @@
         pos-b (menu-pos b)
         chara-count (count (island-charas))
         item-count (count (island-items))
-        switch-first (and (is-item? b) (not (is-item? a)))
-        switch-second (or switch-first
-                          (and (is-item? a) (not (is-item? b))))
+        switch-first (not (is-item? a))
+        switch-second (or (and switch-first (is-item? b))
+                          (and (is-item? a) (not (is-item? b)) ))
         size-a (if (is-item? a) item-count chara-count)
         size-b (if (is-item? b) item-count chara-count)]
+    (println pos-a " " pos-b " " size-a " " size-b)
     (play-input
      [(if switch-first △ [:wait]) [:wait 10]
       (menu-key-seq (fusion-menu-cursor) pos-a :fusion size-a)
-      [:wait 10]×
-      (if switch-second △ [:wait]) [:wait 10]
-      (menu-key-seq (fusion-menu-cursor) pos-b :fusion size-b)
-      [:wait 10]×])))
+      [:wait 10]×])
+    (play-input [(if switch-second △ [:wait]) [:wait 10]
+                 (menu-key-seq (fusion-menu-second-cursor) pos-b :fusion size-b)
+                 [:wait 10] × [:wait 10]])))

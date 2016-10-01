@@ -3,6 +3,7 @@
             [burgundy.menu :refer :all]
             [burgundy.battle :refer :all]
             [burgundy.queue :refer [cmd]]
+            [burgundy.logic :refer [add-team-members]]
             [burgundy.repl :refer :all])
   (:import com.ruin.psp.PSP)
   (:import java.io.File))
@@ -58,6 +59,7 @@
 (defn play [n]
   (load-skill-types)
   (gen-type-kw-maps)
+  (add-team-members)
   (dorun (dotimes [_ n]
            (Thread/sleep 1)
            ;; (list-units)

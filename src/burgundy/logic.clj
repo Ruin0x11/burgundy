@@ -13,26 +13,28 @@
 ;; when denoting the target of a goal, select a ref in the vector
 ;; whenever a unit is removed or added, the position of the ref will shift accordingly
 ;; that way the position can change inside goals
+;; if the position becomes nil, it means the unit was deleted
 (def item-refs (ref []))
 (def chara-refs (ref []))
+(def dungeon-refs (ref []))
 
 (defn make-unit-refs []
-  (ref-set item-refs (ref (vec (map ref (range 0 (count (island-items)))))))
-  (ref-set chara-refs (ref (vec (map ref (range 0 (count (island-charas))))))))
+  (dosync
+   (ref-set item-refs (vec (map ref (range 0 (count (island-items))))))
+   (ref-set chara-refs (vec (map ref (range 0 (count (island-charas))))))
+   (ref-set dungeon-refs (vec (map ref (range 0 (count (dungeons))))))))
 
 (defn delete-element [vc pos]
   (vec (concat
-         (subvec vc 0 pos)
-         (subvec vc (inc pos)))))
+        (subvec vc 0 pos)
+        (subvec vc (inc pos)))))
 
-(defn remove-unit [n refs]
+(defn add-unit [refs]
   (dosync
-   (ref-set (nth @refs n) nil)
-   (commute refs delete-element n))
-  (let [stale (drop n @refs)]
-    (dosync (dorun
-             (map #(commute % - 1) stale)))))
+   (commute refs conj (ref (count @refs)))))
 
+(defn unit-from-ref [ref units]
+  (nth units @ref))
 
 (def logic-state
   ":team-members - units that will not be deleted
@@ -40,13 +42,40 @@
    :goal - the thing the AI is trying to do"
   (ref {:team-members [] :tags {} :goals []}))
 
+(defn team-members []
+  (map #(unit-from-ref % (island-charas)) (get-in @logic-state [:team-members])))
+
+(defn add-team-members []
+  (make-unit-refs)
+  (dosync (dorun
+           (doseq [val (seq @chara-refs)]
+             (commute logic-state update-in [:team-members] conj val)))))
+
+(defn clean-tags [tags]
+  (into {} (filter (comp deref first) tags)))
+
+(defn clean-tagged-units
+  "Removes units that have been deleted from the tags."
+  []
+  (dosync
+   (commute logic-state update-in [:tags] clean-tags)))
+
+(defn remove-unit [n refs]
+  (dosync
+   (ref-set (nth @refs n) nil)
+   (commute refs delete-element n))
+  (let [stale (drop n @refs)]
+    (dosync (dorun
+             (map #(commute % - 1) stale))))
+  (clean-tagged-units))
+
 (defn make-chara-refs []
   (map ref (range 0 (count (island-charas)))))
 
 (defn tag-unit [unit tag]
   (let [pos (menu-pos unit)
         refs (if (is-item? unit) item-refs chara-refs)
-        unit-ref (nth refs pos)]
+        unit-ref (nth @refs pos)]
     (dosync
      (commute logic-state assoc-in [:tags unit-ref] tag))))
 
@@ -73,14 +102,11 @@
   (dosync
    (commute logic-state update-in [:goals] next)))
 
-(defn member-with-class [class]
-  (some #{class} (map get-class (team-members))))
-
-(defn vvals [m]
-  (when (map? m) (vals m)))
+(defn members-with-class [class]
+  (filter #(= (get-class %) class) (team-members)))
 
 (defn units-with-role [role]
-  (filter #(= role (:role (val %))) (:tags @logic-state)))
+  (map #(unit-from-ref (first %) (island-charas)) (filter #(= role (:role (val %))) (:tags @logic-state))))
 
 (defn unit-with-role [role]
   (first (units-with-role role)))
@@ -97,7 +123,9 @@
 
 (defn create-character-with-tag [class tag]
   (when (create-character class 0)
-    (tag-unit (latest-chara) tag)))
+    (add-unit chara-refs)
+    (tag-unit (latest-chara) tag)
+    (:tags @logic-state)))
 
 (defn grind-sp-tree [unit sp-type threshold]
   ;; create high affinity char
@@ -124,13 +152,29 @@
   ;;   when 20 units have been killed, end goal
   )
 
-(defn get-mana-goal [target amount])
+(defn get-mana-goal [target amount]
+
+  )
 
 (defn grind-passive-tree [identifier skill-kw]
-  (let [fusionist-lv (get-level (member-with-class :fusionist))
+  (let [fusionist-lv (get-level (first (members-with-class :fusionist)))
         fusion-target (unit-with-role :fusion-target)
         fusion-material (unit-with-role :fusion-material)]
     (？ "Obtain Passive Skill"
+        (？ "Fuse to soldier"
+            (action "Create Soldier" (when (nil? fusion-target)
+                                       (create-character-with-tag :soldier {:role :fusion-target})
+                                       true))
+
+            (action "Create Target" (when (nil? fusion-material)
+                                      (let [material-class (skill-kw passive-skill-classes)]
+                                        (create-character-with-tag material-class {:role :fusion-material}))
+                                      true))
+            (action "Fuse" (do
+                             (fuse fusion-target fusion-material)
+                             (remove-unit (menu-pos fusion-target) chara-refs)
+                             (end-goal)))
+            )
         (≫ "Attempt Fusion"
          (action "Level = 99?" (let [skill (get-skill fusion-material skill-kw)]
                                  (when skill
@@ -140,25 +184,10 @@
                    (when (> diff 0)
                      (add-goal {:type :get-mana :target 0 :amount diff})
                      false)))
-         (action "Fuse" #_(fuse fusion-target fusion-material :skills [:return])
-                 (end-goal)))
-        (？ "Fuse to soldier"
-            (action "Create Soldier" (when (nil? fusion-target)
-                                       (create-character-with-tag :soldier {:role :fusion-target})
-                                       true))
-
-            (action "Create Target" (when (nil? fusion-material)
-                                      (let [material-class (skill-kw passive-skill-classes)]
-                                        (create-character-with-tag material-class {:role :fusion-target}))
-                                      true))
-            (≫ "Attempt Fusion"
-             (action "Enough Mana?"
-                     (let [diff (fusion-cost-diff fusion-target fusion-material skill-kw :sss fusionist-lv)]
-                       (when (> diff 0)
-                         (add-goal {:type :get-mana :target target-id :amount diff})
-                         false)))
-             (action "Fuse" #_(fuse fusion-target fusion-material :skills [:return])
-                     (end-goal)))))))
+         (action "Fuse" (do
+                          #_(fuse fusion-target fusion-material :skills [:return])
+                          (end-goal))))
+        )))
 
 
 (defn dungeon-tree [dungeon-type]
@@ -177,8 +206,8 @@
 
 (defn choose-goal-tree []
   (let [goal (current-goal)]
-   (case (:type goal)
-     :grind-passive (grind-passive-tree (:target goal) (:skill goal)))))
+    (case (:type goal)
+      :grind-passive (grind-passive-tree (:target goal) (:skill goal)))))
 
 (defn island-tree []
   (？ "Island Tree"
