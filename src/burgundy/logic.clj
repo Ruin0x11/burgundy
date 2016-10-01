@@ -60,14 +60,15 @@
   (dosync
    (commute logic-state update-in [:tags] clean-tags)))
 
-(defn remove-unit [n refs]
-  (dosync
-   (ref-set (nth @refs n) nil)
-   (commute refs delete-element n))
-  (let [stale (drop n @refs)]
-    (dosync (dorun
-             (map #(commute % - 1) stale))))
-  (clean-tagged-units))
+(defn remove-unit [unit-or-pos refs]
+  (let [n (if (instance? Unit unit-or-pos) (menu-pos unit-or-pos) unit-or-pos)]
+    (dosync
+     (ref-set (nth @refs n) nil)
+     (commute refs delete-element n))
+    (let [stale (drop n @refs)]
+      (dosync (dorun
+               (map #(commute % - 1) stale))))
+    (clean-tagged-units)))
 
 (defn make-chara-refs []
   (map ref (range 0 (count (island-charas)))))
@@ -114,18 +115,30 @@
 (defn nobody-doing? [role]
   (empty? (units-with-role role)))
 
-(def ≫ sequence)
-(def ？ selector)
-;; (def λ action)
-
-(defn should-heal? []
-  (some #{true} (map needs-heal? (island-units))))
+;; safe versions of actions that add and remove units
+;; references to unit positions must be updated when the unit list is reorganized
+;; otherwise the same unit will not be referenced anymore on a position change
 
 (defn create-character-with-tag [class tag]
   (when (create-character class 0)
     (add-unit chara-refs)
     (tag-unit (latest-chara) tag)
     (:tags @logic-state)))
+
+(defn fuse-safe [target material]
+  (when (fuse target material)
+    (remove-unit material chara-refs)))
+
+(defn banish-safe [unit]
+  (when (banish unit)
+    (remove-unit unit chara-refs)))
+
+(def ≫ sequence)
+(def ？ selector)
+;; (def λ action)
+
+(defn should-heal? []
+  (some #{true} (map needs-heal? (island-units))))
 
 (defn grind-sp-tree [unit sp-type threshold]
   ;; create high affinity char
@@ -171,8 +184,7 @@
                                         (create-character-with-tag material-class {:role :fusion-material}))
                                       true))
             (action "Fuse" (do
-                             (fuse fusion-target fusion-material)
-                             (remove-unit (menu-pos fusion-target) chara-refs)
+                             (fuse-safe fusion-target fusion-material) 
                              (end-goal)))
             )
         (≫ "Attempt Fusion"
@@ -185,7 +197,7 @@
                      (add-goal {:type :get-mana :target 0 :amount diff})
                      false)))
          (action "Fuse" (do
-                          #_(fuse fusion-target fusion-material :skills [:return])
+                          #_(fuse-safe fusion-target fusion-material :skills [:return])
                           (end-goal))))
         )))
 

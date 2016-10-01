@@ -106,10 +106,12 @@
 (defn banish [unit]
   (pick-up unit)
   (goto-marona)
-  (play-input [× [:wait 20] × [:wait 20] × [:wait 100]]))
+  (play-input [× [:wait 20] × [:wait 20] × [:wait 100]])
+  true)
 
 (defn fuse [target material]
   (move-to-unit (unit-by-name "Miyu") :island)
   (play-input [× [:wait 50] × [:wait 10]])
   (select-fusion-units target material)
-  (play-input [↑ × × [:wait 120] ○]))
+  (play-input [↑ × × [:wait 120] ○])
+  true)
